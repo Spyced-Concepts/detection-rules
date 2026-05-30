@@ -28,13 +28,13 @@ rule Megalodon_Base64_Eval_Payload {
         falsepositives  = "Unusual but possible in legitimate workflows decoding and executing trusted setup scripts; require code review"
         note            = "Base64-encoded execution is the primary payload delivery mechanism for both Megalodon variants"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $base64_pipe_bash = /\|\s*base64\s+(-d|-D|--decode)\s*\|\s*(bash|sh)/ ascii

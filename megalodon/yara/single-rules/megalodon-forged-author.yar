@@ -28,13 +28,13 @@ rule Megalodon_Forged_Author_Email {
         falsepositives  = "Organisations using ci-bot, build-bot, or auto-ci as legitimate automation identities"
         note            = "Apply to git log output or commit metadata, not workflow files"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $email1 = "[email protected]" ascii

@@ -29,13 +29,13 @@ rule Megalodon_Workflow_C2_IP {
         tlp             = "TLP:CLEAR"
         falsepositives  = "None  -  216.126.225.129 has been observed exclusively in malicious Megalodon workflows"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $c2_ip = "216.126.225.129" ascii wide
@@ -60,13 +60,13 @@ rule Megalodon_Workflow_Names {
         tlp             = "TLP:CLEAR"
         falsepositives  = "Legitimate in-house workflows named SysDiag or Optimize-Build; correlate with additional IoCs before acting"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $sysdiag = "name: SysDiag" ascii
@@ -92,13 +92,13 @@ rule Megalodon_Forged_Author_Email {
         falsepositives  = "Organisations using ci-bot, build-bot, or auto-ci as legitimate automation identities"
         note            = "Apply to git log output or commit metadata, not workflow files"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $email1 = "[email protected]" ascii
@@ -128,13 +128,13 @@ rule Megalodon_Workflow_Dangerous_Permissions {
         falsepositives  = "Confirmed real-world FP: legitimate PR deploy preview workflows also combine a fork-PR trigger with an OIDC token grant. This rule fires on both malicious and benign uses of the pattern."
         operator_note   = "Treat as a triage signal, not an auto-block. Correlate with workflow name (SysDiag, Optimize-Build), C2 IP, or base64 payload IoCs before acting. A match here without corroborating indicators warrants review, not immediate response."
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "1  -  benign-prt-with-oidc.yml (legitimate PR deploy preview); real-world FP cannot be eliminated without losing detection coverage"
         precision       = "66.7%"
         recall          = "100%"
         f1              = "0.80"
         f2              = "0.91"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $prt = "pull_request_target" ascii
@@ -161,13 +161,13 @@ rule Megalodon_Base64_Eval_Payload {
         falsepositives  = "Unusual but possible in legitimate workflows decoding and executing trusted setup scripts; require code review"
         note            = "Base64-encoded execution is the primary payload delivery mechanism for both Megalodon variants"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $base64_pipe_bash = /\|\s*base64\s+(-d|-D|--decode)\s*\|\s*(bash|sh)/ ascii
@@ -194,13 +194,13 @@ rule Megalodon_Workflow_Dispatch_Backdoor {
         tlp             = "TLP:CLEAR"
         falsepositives  = "workflow_dispatch alone is extremely common; this rule fires only when combined with Optimize-Build name or C2 IP  -  false positives on those combinations are unlikely"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $wf_dispatch = "workflow_dispatch:" ascii
@@ -229,13 +229,13 @@ rule Megalodon_High_Confidence {
         tlp             = "TLP:CLEAR"
         falsepositives  = "None expected  -  requires C2 IP or two corroborating Megalodon-specific indicators"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $c2_ip = "216.126.225.129" ascii

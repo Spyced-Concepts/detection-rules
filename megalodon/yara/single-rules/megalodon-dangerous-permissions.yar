@@ -30,13 +30,13 @@ rule Megalodon_Workflow_Dangerous_Permissions {
         falsepositives  = "Confirmed real-world FP: legitimate PR deploy preview workflows also combine a fork-PR trigger with an OIDC token grant. This rule fires on both malicious and benign uses of the pattern."
         operator_note   = "Treat as a triage signal, not an auto-block. Correlate with workflow name (SysDiag, Optimize-Build), C2 IP, or base64 payload IoCs before acting. A match here without corroborating indicators warrants review, not immediate response."
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "1  -  benign-prt-with-oidc.yml (legitimate PR deploy preview); real-world FP cannot be eliminated without losing detection coverage"
         precision       = "66.7%"
         recall          = "100%"
         f1              = "0.80"
         f2              = "0.91"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $prt = "pull_request_target" ascii
