@@ -1,6 +1,6 @@
-# Negative fixture — legitimate pull_request_target without id-token: write
-# Standard PR comment workflow — uses pull_request_target for fork PR access
-# but does NOT grant id-token: write. Should NOT match Megalodon_Workflow_Dangerous_Permissions.
+# Negative fixture — fork-PR trigger without an OIDC token permission grant.
+# Standard PR comment workflow — uses the fork-PR trigger for read access to
+# the PR context but does not request cloud credentials. Should NOT match Megalodon_Workflow_Dangerous_Permissions.
 name: Comment on PR
 on:
   pull_request_target:

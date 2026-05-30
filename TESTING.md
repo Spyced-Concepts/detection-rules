@@ -1,3 +1,11 @@
+---
+title: Testing Detection Rules
+author: Spyced Concepts Ltd.
+created: 2026-05-30
+updated: 2026-05-30
+license: Apache-2.0
+---
+
 # Testing Detection Rules
 
 **All YARA testing MUST run inside an isolated container. Running YARA directly on a development machine is not permitted.**
@@ -61,14 +69,26 @@ docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
 
 Any output from this command is a false positive — a benign file incorrectly matched. Every false positive must be resolved before merging.
 
-### Full score — precision, recall, F1
+### Full score — precision, recall, F1, and Fβ
 
 ```bash
 docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
   python3 tests/run-tests.py tests/megalodon/test-manifest.json
 ```
 
-Reports TP/FP/FN/TN per rule plus precision, recall, and F1. Exits with code 1 if any rule has `FP > 0` or `FN > 0`.
+To save a dated report alongside the container output (required before publishing):
+
+```bash
+mkdir -p tests/megalodon/results
+docker run --rm \
+  -v "$(pwd)":/rules:ro \
+  -v "$(pwd)/tests/megalodon/results":/results:rw \
+  detection-rules-yara \
+  python3 tests/run-tests.py tests/megalodon/test-manifest.json \
+    --output /results/$(date +%Y-%m-%d)-score.txt
+```
+
+The scorer prints TP/FP/FN/TN per rule, precision, recall, F1, and Fβ (default β = 2). It also prints the scoring formulae at the top of every run — the basis is always visible in the saved output. Exits with code 1 if any rule has `FP > 0` or `FN > 0`. See **[Reliability scoring](#reliability-scoring--basis-and-calculation)** below for the mathematical basis and weighting rationale.
 
 | Metric | Definition | Required to publish |
 |---|---|---|
@@ -78,7 +98,8 @@ Reports TP/FP/FN/TN per rule plus precision, recall, and F1. Exits with code 1 i
 | **TN** | Negative fixture correctly not matched | — |
 | **Precision** | TP ÷ (TP + FP) | **100%** |
 | **Recall** | TP ÷ (TP + FN) | **100%** |
-| **F1** | Harmonic mean | **1.00** |
+| **F1** | Harmonic mean of P and R | **1.00** |
+| **Fβ (β = 2)** | Recall-weighted harmonic mean | **1.00** |
 
 ### Tear down
 
@@ -87,6 +108,75 @@ The `--rm` flag on every `docker run` command destroys the container automatical
 ```bash
 docker rmi detection-rules-yara
 ```
+
+---
+
+## Reliability scoring — basis and calculation
+
+### Confusion matrix
+
+For each fixture, each rule produces one of four outcomes:
+
+| Fixture type | Rule fires | Outcome |
+|---|---|---|
+| Positive (expected to match) | Yes | **True Positive (TP)** — correct detection |
+| Positive (expected to match) | No | **False Negative (FN)** — missed threat |
+| Negative (expected not to match) | Yes | **False Positive (FP)** — false alarm |
+| Negative (expected not to match) | No | **True Negative (TN)** — correct non-detection |
+
+### Formulae
+
+**Precision** — of all files the rule fired on, what fraction were genuinely malicious?
+
+```
+Precision = TP / (TP + FP)
+```
+
+Low precision floods analysts with false alarms. In a SOC context this leads to alert fatigue and rules being disabled.
+
+**Recall** — of all genuinely malicious files, what fraction did the rule catch?
+
+```
+Recall = TP / (TP + FN)
+```
+
+Low recall lets threats pass undetected. A missed threat may allow an attack to proceed without any alert.
+
+**F1** — harmonic mean; treats a missed threat and a false alarm as equally costly:
+
+```
+F1 = 2 × Precision × Recall / (Precision + Recall)
+```
+
+**Why F1 alone is not enough:** in security detection, a false negative (missed threat) and a false positive (false alarm) are not equally costly. The relative cost depends on the deployment context. F1 cannot express this asymmetry.
+
+**Fβ** — weighted harmonic mean that adjusts the cost ratio between FP and FN:
+
+```
+Fβ = (1 + β²) × Precision × Recall / (β² × Precision + Recall)
+```
+
+| β value | Effect | When to use |
+|---|---|---|
+| β > 1 | Recall weighted more heavily — missed threats penalised harder | Default for detection rules: a missed threat is more dangerous than a false alarm |
+| β = 1 | Equal weight — identical to F1 | Symmetric cost environments |
+| β < 1 | Precision weighted more heavily — false alarms penalised harder | Very high-volume noisy environments where alert fatigue is the dominant risk |
+
+**Default: β = 2 (F2 score).** Recall is weighted 4× more than precision (β² = 4). This expresses the judgement that a missed threat is four times more costly than a false alarm — the conventional choice for security detection rules. Override with `--beta <value>` when a campaign warrants a different weighting.
+
+### Why all four metrics must reach 1.00 to publish
+
+When both FP = 0 and FN = 0, precision and recall are both 1.00, which forces F1 = 1.00 and Fβ = 1.00 regardless of β. The weighting does not create a softer bar — it is a diagnostic that identifies *which type of error* is present when the rule fails. A rule that passes all four metrics at 1.00 has zero errors of either type in the test set.
+
+### Saved output and traceability
+
+Every test run that precedes publishing must produce a saved report file committed alongside the rule. The file includes the formulae, β value, fixture-level PASS/FAIL, and per-rule scores — so anyone reading the commit can reproduce the exact calculation.
+
+```
+tests/megalodon/results/YYYY-MM-DD-score.txt
+```
+
+The `--output /results/YYYY-MM-DD-score.txt` argument (with a writable `/results` volume mount) produces this file from inside the container. See the **Full score** section above for the complete command.
 
 ---
 
@@ -108,18 +198,33 @@ Example: `Megalodon_Workflow_Dangerous_Permissions` detects `pull_request_target
 
 ### Recording results in rule meta
 
-After a clean run, record the outcome in each rule's `meta` block:
+After a clean run, append the outcome to each rule's `meta` block. The full set of standard meta fields is:
 
 ```yara
 meta:
-    tested              = "2026-05-30"
-    positive_fixtures   = "7"
-    negative_fixtures   = "9"
-    false_positives     = "0 in test set — see tests/megalodon/test-manifest.json"
-    precision           = "100%"
-    recall              = "100%"
-    f1                  = "1.00"
+    description     = "..."
+    author          = "Spyced Concepts Ltd. <https://spycedconcepts.co.uk>"
+    created         = "2026-05-30"
+    version         = "1.0"
+    reference       = "https://..."
+    license         = "Apache-2.0"
+    severity        = "CRITICAL|HIGH|MEDIUM|LOW"
+    campaign        = "<campaign>"
+    mitre_attack    = "T1234,T1234.001"
+    tlp             = "TLP:CLEAR"
+    falsepositives  = "..."
+    tested          = "2026-05-30"
+    positive_fixtures = "N"
+    negative_fixtures = "N"
+    false_positives = "0 in test set — see tests/<campaign>/test-manifest.json"
+    precision       = "100%"
+    recall          = "100%"
+    f1              = "1.00"
+    f2              = "1.00"
+    score_report    = "tests/<campaign>/results/YYYY-MM-DD-score.txt"
 ```
+
+All fields above `tested` are required at rule creation. Fields from `tested` onward are added after the first successful test run.
 
 ---
 
@@ -127,10 +232,12 @@ meta:
 
 ```
 tests/
-├── Dockerfile                        # Test container definition (YARA + Python 3)
-├── run-tests.py                      # Scoring script (campaign-agnostic)
+├── Dockerfile                        # Test container definition (YARA + sigma-cli + Python 3)
+├── run-tests.py                      # Scoring script (campaign-agnostic; Fβ weighted)
 └── <campaign>/
     ├── test-manifest.json            # Declares expected matches per fixture
+    ├── results/                      # Dated score reports (committed as evidence)
+    │   └── YYYY-MM-DD-score.txt
     └── fixtures/
         ├── positive/                 # Files the rules must match
         └── negative/                 # Files the rules must not match
@@ -156,9 +263,16 @@ Do not upload rules containing unpublished IoCs or internal indicators to third-
 
 ## Sigma testing
 
-Sigma linting does not scan potentially malicious files — `sigma check` validates rule syntax only. Local execution is acceptable.
+Sigma linting runs in the test container. `sigma check` validates rule syntax only — it does not scan potentially malicious files, so it poses no isolation risk. The container is the canonical path for consistency; local execution is also acceptable when a quick check is needed without Docker.
 
-### Lint check (automated in CI)
+### Lint check — via container (canonical)
+
+```bash
+docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
+  sigma check megalodon/sigma/megalodon-github-direct-push-workflow.yml
+```
+
+### Lint check — local (quick check only)
 
 ```bash
 pip install sigma-cli
@@ -192,6 +306,17 @@ sigma convert -t elasticsearch megalodon/sigma/megalodon-github-direct-push-work
 sigma convert -t sentinel megalodon/sigma/megalodon-github-direct-push-workflow.yml
 ```
 
+### Sigma reliability scoring — current gap
+
+**The fixture-based FP/FN scoring in `run-tests.py` covers YARA rules only.** There is no equivalent precision/recall/F1 framework for Sigma rules yet.
+
+Testing a Sigma rule for false positives and false negatives requires:
+1. **Log data samples** — real or synthetic EVTX / audit log files representing both attack and benign events
+2. **A Sigma evaluation engine** — tools like `sigma-test` (community) or a live SIEM backend to run the converted query against the sample data
+3. **A separate test harness** — the manifest format in `run-tests.py` would need a parallel implementation that invokes the evaluation engine against log fixtures
+
+Until this is built, Sigma rules carry a lower evidence bar than YARA rules. Validation against live log data (or a representative sample set) must be completed before `status: experimental` is promoted to `status: stable`.
+
 ---
 
 ## Other rule formats — future consideration
@@ -205,3 +330,7 @@ sigma convert -t sentinel megalodon/sigma/megalodon-github-direct-push-workflow.
 ---
 
 *See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full rule quality gate and pull request process.*
+
+---
+
+*Copyright 2026 Spyced Concepts Ltd. (company number 16978283) · Licensed under [Apache-2.0](LICENSE)*

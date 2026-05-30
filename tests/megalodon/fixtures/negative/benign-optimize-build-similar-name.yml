@@ -1,6 +1,6 @@
-# Negative fixture — workflow name that resembles but does not match Megalodon IoC
-# Tests that Megalodon_Workflow_Names does NOT match on similar-but-different names.
-# Rule matches "name: Optimize-Build" exactly — word order and hyphen matter.
+# Negative fixture — workflow name that resembles but does not match the Megalodon IoC.
+# The IoC name uses a specific word order and hyphen. This fixture uses reversed word
+# order ("Build Optimizer") to confirm the rule does not match on partial similarity.
 # Should NOT match any Megalodon rules.
 name: Build Optimizer
 on: push

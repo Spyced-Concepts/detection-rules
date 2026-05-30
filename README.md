@@ -1,3 +1,11 @@
+---
+title: detection-rules
+author: Spyced Concepts Ltd.
+created: 2026-05-30
+updated: 2026-05-30
+license: Apache-2.0
+---
+
 # detection-rules
 
 Detection rules for supply chain, CI/CD, and developer tooling threats — YARA and Sigma.
@@ -90,3 +98,7 @@ Apache 2.0 — see [LICENSE](LICENSE).
 ## Contact
 
 [stuart@spycedconcepts.co.uk](mailto:stuart@spycedconcepts.co.uk)
+
+---
+
+*Copyright 2026 Spyced Concepts Ltd. (company number 16978283) · Licensed under [Apache-2.0](LICENSE)*

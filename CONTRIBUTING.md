@@ -1,3 +1,11 @@
+---
+title: Contributing
+author: Spyced Concepts Ltd.
+created: 2026-05-30
+updated: 2026-05-30
+license: Apache-2.0
+---
+
 # Contributing
 
 This repository is maintained by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk)
@@ -116,3 +124,7 @@ One `.yar` file per campaign is the default — use multiple files only when rul
 ## Using published rules
 
 All rules are published under the Apache 2.0 licence. Use them freely in your own tools, SIEM configurations, or security workflows. Attribution is appreciated but not required by the licence.
+
+---
+
+*Copyright 2026 Spyced Concepts Ltd. (company number 16978283) · Licensed under [Apache-2.0](LICENSE)*

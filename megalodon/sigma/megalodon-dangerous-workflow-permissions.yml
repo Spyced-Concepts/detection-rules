@@ -22,8 +22,9 @@ references:
     - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
     - https://github.com/Spyced-Concepts/detection-rules
 
-author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+author: Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
 date: 2026-05-30
+license: Apache-2.0
 
 tags:
     - attack.persistence

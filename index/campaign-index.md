@@ -1,3 +1,11 @@
+---
+title: Campaign Index
+author: Spyced Concepts Ltd.
+created: 2026-05-30
+updated: 2026-05-30
+license: Apache-2.0
+---
+
 # Campaign Index
 
 Detection rules published in this repository, organised by threat campaign.

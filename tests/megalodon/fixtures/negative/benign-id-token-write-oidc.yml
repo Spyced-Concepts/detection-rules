@@ -1,6 +1,6 @@
-# Negative fixture — legitimate id-token: write for OIDC (no pull_request_target)
-# Standard AWS OIDC authentication in a push workflow — does NOT use pull_request_target.
-# Should NOT match Megalodon_Workflow_Dangerous_Permissions.
+# Negative fixture — legitimate OIDC token request on a push trigger (no fork PR trigger).
+# Standard AWS OIDC authentication. The id-token permission appears without the
+# fork-PR trigger that makes it dangerous. Should NOT match Megalodon_Workflow_Dangerous_Permissions.
 name: Deploy to AWS
 on:
   push:

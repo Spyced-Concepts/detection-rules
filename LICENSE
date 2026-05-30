@@ -1,3 +1,17 @@
+SUPPLEMENTAL NOTICE — GOVERNING LAW
+=====================================
+This Work is copyright 2026 Spyced Concepts Ltd., a company registered in
+England and Wales (company number 16978283). Registered office: 128 City
+Road, London, EC1V 2NX. Any dispute arising out of or in connection with
+this Work shall be governed by and construed in accordance with the laws of
+England and Wales, and the parties irrevocably submit to the exclusive
+jurisdiction of the courts of England and Wales.
+
+This notice is additional to, and does not modify, the Apache License,
+Version 2.0 reproduced below.
+
+=======================================================================
+
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -186,7 +200,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [yyyy] [name of copyright owner]
+   Copyright 2026 Spyced Concepts Ltd.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

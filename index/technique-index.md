@@ -1,3 +1,11 @@
+---
+title: ATT&CK Technique Index
+author: Spyced Concepts Ltd.
+created: 2026-05-30
+updated: 2026-05-30
+license: Apache-2.0
+---
+
 # ATT&CK Technique Index
 
 Detection rules in this repository, organised by MITRE ATT&CK technique.
