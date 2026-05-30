@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
     branches: [main]
 
+concurrency:
+  group: reviewsentry-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -13,17 +17,16 @@ jobs:
   review:
     name: ReviewSentry
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: Spyced-Concepts/ReviewSentry@v0.3.5-beta
         with:
-          ai_api_key: ${{ secrets.AI_API_KEY }}
-          ai_model: ${{ vars.AI_MODEL }}
-          ai_provider: anthropic
-          pr_number: ${{ github.event.pull_request.number }}
-          pr_title: ${{ github.event.pull_request.title }}
-          pr_body: ${{ github.event.pull_request.body }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ai_api_key:    ${{ secrets.AI_API_KEY }}
+          ai_model:      ${{ vars.AI_MODEL }}
+          ai_provider:   anthropic
+          pr_number:     ${{ github.event.pull_request.number }}
+          pr_title:      ${{ github.event.pull_request.title }}
+          pr_body:       ${{ github.event.pull_request.body }}
+          github_token:  ${{ secrets.GITHUB_TOKEN }}
+          diff_lines:    3000
+          pr_body_chars: 4000
