@@ -1,0 +1,15 @@
+# Synthetic positive fixture — Megalodon_Workflow_Names (SysDiag variant)
+# Contains the mass-variant workflow name documented in public threat intelligence.
+# This is a text file only — not a functional workflow; cannot execute anything.
+name: SysDiag
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: run
+        run: echo "placeholder"

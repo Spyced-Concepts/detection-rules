@@ -1,0 +1,12 @@
+# Synthetic positive fixture — Megalodon_Base64_Eval_Payload
+# Contains the base64-pipe-to-bash payload pattern used in the Megalodon targeted variant.
+# The base64 string here is a benign placeholder encoding "echo hello" — not a real payload.
+# This is a text file only — not a functional workflow; cannot execute anything.
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run
+        run: echo aGVsbG8K | base64 -d | bash

