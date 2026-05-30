@@ -97,7 +97,7 @@ Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Contact
 
-[stuart@spycedconcepts.co.uk](mailto:stuart@spycedconcepts.co.uk)
+[spycedconcepts.co.uk/contact](https://spycedconcepts.co.uk/contact)
 
 ---
 

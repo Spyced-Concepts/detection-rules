@@ -38,7 +38,7 @@ We believe in transparent, good-faith threat intelligence sharing. When this pac
 
 1. **SafeDep.io are notified directly** — emailed or contacted via social/GitHub, credited as the source of the intelligence, and given the opportunity to review, link back, or raise any concerns before or after publication.
 2. **All community submission PRs** (Neo23x0/signature-base, Elastic detection-rules) include an explicit statement in the PR description that IoC intelligence derives from SafeDep.io's original research, with a direct link.
-3. **If a credited source is unhappy** with how their work is referenced, we will discuss with them and adapt the attribution or, if they request it, remove the content. Take-down requests go to stuart@spycedconcepts.co.uk.
+3. **If a credited source is unhappy** with how their work is referenced, we will discuss with them and adapt the attribution or, if they request it, remove the content. Take-down requests go to [spycedconcepts.co.uk/contact](https://spycedconcepts.co.uk/contact).
 
 The intent is that everyone knows what was done and why. The security community benefits from shared detection capability; SafeDep.io's research made that possible here.
 
