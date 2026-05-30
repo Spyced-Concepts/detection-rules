@@ -1,8 +1,8 @@
 # detection-rules
 
-Community detection rules for supply chain, CI/CD, and developer tooling threats — YARA and Sigma. Apache 2.0.
+Detection rules for supply chain, CI/CD, and developer tooling threats — YARA and Sigma.
 
-Maintained by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk) — a UK security software company building tools for developers and SMEs.
+Published by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk) — a UK security software company. Rules are researched, written, and tested internally before publication. Use them freely under the Apache 2.0 licence.
 
 ---
 
@@ -10,16 +10,18 @@ Maintained by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk) — a UK secu
 
 | Path | Format | Coverage |
 |---|---|---|
-| `yara/megalodon/` | YARA | Megalodon GitHub CI backdoor campaign (2026-05-18) |
-| `sigma/megalodon/` | Sigma | Megalodon GitHub CI backdoor campaign (2026-05-18) |
+| `megalodon/yara/` | YARA | Megalodon GitHub CI backdoor campaign (2026-05-18) |
+| `megalodon/sigma/` | Sigma | Megalodon GitHub CI backdoor campaign (2026-05-18) |
+
+---
 
 ## Megalodon
 
-**Campaign:** Mass GitHub CI workflow backdoor — 5,561 repositories compromised using stolen Personal Access Tokens to push malicious workflow files directly to default branches.
+**Campaign:** Mass GitHub CI workflow backdoor — 5,561 repositories compromised using stolen Personal Access Tokens (PATs) to push malicious workflow files directly to repository default branches, bypassing PR review.
 
 **Attack variants:**
-- `SysDiag.yml` — mass variant; uses `pull_request_target` + `id-token: write` to give fork PRs access to OIDC tokens and secrets
-- `Optimize-Build.yml` — targeted variant; triggered via `workflow_dispatch`; exfiltrates CI secrets to C2 at `216.126.225.129:8443` via base64-encoded bash payload
+- `SysDiag.yml` — mass variant; uses `pull_request_target` + `id-token: write` to grant fork PRs access to OIDC tokens and secrets
+- `Optimize-Build.yml` — targeted variant; triggered via `workflow_dispatch`; exfiltrates CI secrets to C2 at `216.126.225.129:8443` via a base64-encoded bash payload
 
 **Primary defence:** Require pull requests for all pushes to protected branches (GitHub branch ruleset with `pull_request` rule, no bypass actors). This blocks the stolen-PAT direct-push vector entirely.
 
@@ -27,7 +29,7 @@ Maintained by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk) — a UK secu
 - SafeDep.io: [Megalodon — Mass GitHub Repo Backdooring CI Workflows](https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/)
 - Phoenix Security: no existing scanner signatures at time of writing (2026-05-30) — these rules fill that gap
 
-### YARA rules (`yara/megalodon/megalodon-workflow.yar`)
+### YARA rules (`megalodon/yara/megalodon-workflow.yar`)
 
 | Rule | Severity | What it detects |
 |---|---|---|
@@ -41,14 +43,14 @@ Maintained by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk) — a UK secu
 
 **Usage:**
 ```bash
-# Scan a single repo's workflows
-yara -r yara/megalodon/megalodon-workflow.yar /path/to/repo/.github/workflows/
+# Scan a repo's workflow directory
+yara -r megalodon/yara/megalodon-workflow.yar /path/to/repo/.github/workflows/
 
 # Scan all local clones
-yara -r yara/megalodon/megalodon-workflow.yar ~/Projects/
+yara -r megalodon/yara/megalodon-workflow.yar ~/Projects/
 ```
 
-### Sigma rules (`sigma/megalodon/`)
+### Sigma rules (`megalodon/sigma/`)
 
 | Rule file | Log source | Level | What it detects |
 |---|---|---|---|
@@ -56,7 +58,7 @@ yara -r yara/megalodon/megalodon-workflow.yar ~/Projects/
 | `megalodon-workflow-name-ioc.yml` | GitHub audit | Critical | Creation of SysDiag or Optimize-Build workflow files |
 | `megalodon-c2-outbound-network.yml` | Network (Linux) | Critical | Outbound connection to `216.126.225.129:8443` from CI runner |
 | `megalodon-base64-exec-ci-runner.yml` | Process creation (Linux) | High | Base64-decode piped to bash/sh on CI runner host |
-| `megalodon-dangerous-workflow-permissions.yml` | GitHub audit | Medium | Workflow push for manual content review (pairs with YARA rule) |
+| `megalodon-dangerous-workflow-permissions.yml` | GitHub audit | Medium | Workflow push flagged for content review |
 
 **Convert to your SIEM with [sigma-cli](https://github.com/SigmaHQ/sigma-cli):**
 ```bash
@@ -69,12 +71,8 @@ sigma convert -t sentinel sigma/megalodon/
 
 ## Licence
 
-Apache 2.0 — see [LICENSE](LICENSE). Attribution appreciated but not required.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Contact
 
-Security issues: open an issue or contact [stuart@spycedconcepts.co.uk](mailto:stuart@spycedconcepts.co.uk).
+[stuart@spycedconcepts.co.uk](mailto:stuart@spycedconcepts.co.uk)

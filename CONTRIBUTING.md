@@ -1,44 +1,21 @@
 # Contributing
 
-Contributions welcome. These rules are community resources — improvements, new IoCs, false positive corrections, and new campaigns all help defenders.
+This repository is maintained by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk)
 
-## What we accept
+**Rules are published here for public use.** This is not a community hub — contributions are not accepted from the general public. The repository is a publication point, not a collaborative workspace.
 
-- New YARA rules for supply chain, CI/CD, and developer tooling threats
-- New Sigma rules covering the same scope
-- Corrections to existing rules (false positive reduction, regex improvements, field name fixes)
-- New IoCs for existing campaigns (additional C2 IPs, workflow names, forged identities)
-- SIEM-specific tuning notes in rule comments
+## Authorised contributors only
 
-## What we don't accept
+New rules, IoC updates, and corrections are written by Spyced Concepts staff and invited security researchers. If you have been specifically invited to contribute, contact the maintainer for access.
 
-- Rules targeting end-user malware unrelated to supply chain or developer tooling (plenty of other repos for that)
-- Rules with no cited source or observable evidence
-- Untested rules — see Testing below
+## Using the rules
 
-## Rule quality bar
+All rules are published under the Apache 2.0 licence — use them freely in your own tools, SIEM configurations, or security workflows. Attribution is appreciated but not required.
 
-**YARA:**
-- Must compile cleanly: `yara -d megalodon-workflow.yar /dev/null` returns 0
-- Must have `meta:` block with `description`, `author`, `date`, `reference`
-- Regex patterns must be tested against both matching and non-matching fixtures
-- No rules that fire on every file (condition must be specific)
+## Reporting errors
 
-**Sigma:**
-- Must pass `sigma check` (sigma-cli)
-- Must have `id` (UUID4), `status`, `author`, `date`, `references`, `tags`, `level`
-- ATT&CK tags required where applicable (`attack.tNNNN`)
-- `falsepositives` must be populated — "None" is rarely correct
+If you find a false positive or an error in a published rule, open an issue at the GitHub repository. We will review and correct it in the next publication cycle.
 
-## Submitting
+## Maintainer
 
-1. Fork the repo
-2. Add your rule(s) under the relevant campaign folder (`yara/<campaign>/` or `sigma/<campaign>/`)
-3. For a new campaign, create the folder and add a brief description to `README.md`
-4. Open a pull request with a summary of what the rule detects and how you verified it
-
-## Testing
-
-YARA rules must be tested with both positive fixtures (files that should match) and negative fixtures (files that should not). Document the test approach in your PR description.
-
-For Sigma rules, note which SIEM/backend you validated against.
+Stu Last — [stuart@spycedconcepts.co.uk](mailto:stuart@spycedconcepts.co.uk)
