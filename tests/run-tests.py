@@ -104,6 +104,11 @@ def main():
     parser.add_argument("manifest", help="Path to test-manifest.json")
     parser.add_argument("--yara-bin", default="yara", help="Path to YARA binary (default: yara)")
     parser.add_argument(
+        "--root", default=None, metavar="DIR",
+        help="Repository root for resolving rules_file paths in the manifest. "
+             "Default: two directories above this script (repo root when run locally).",
+    )
+    parser.add_argument(
         "--beta", type=float, default=2.0,
         help="β for Fβ scoring. β > 1 penalises false negatives more heavily (default: 2.0).",
     )
@@ -120,7 +125,7 @@ def main():
         sys.exit(2)
 
     manifest = json.loads(manifest_path.read_text())
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parent.parent
     rules_file = repo_root / manifest["rules_file"]
     fixture_base = manifest_path.parent
     all_rules = manifest.get("all_rules", [])

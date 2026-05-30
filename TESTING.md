@@ -8,7 +8,7 @@ license: Apache-2.0
 
 # Testing Detection Rules
 
-**All YARA testing MUST run inside an isolated container. Running YARA directly on a development machine is not permitted.**
+**All testing MUST run inside an isolated container. Running YARA or Sigma tools directly on a development machine is not permitted.**
 
 The isolation requirement is not a preference — it is the safety control. The test container is stood up, used, and torn down for each test run. Nothing from the test environment persists on the host after the container exits.
 
@@ -19,76 +19,162 @@ The isolation requirement is not a preference — it is the safety control. The 
 YARA scans byte patterns in files. For current fixtures (GitHub Actions YAML — plain text), the risk of direct host execution is low. The mandatory isolation rule exists because:
 
 1. **Future fixtures may not be text files.** If we ever test rules against binary samples, kernel exploits, or packed payloads, a container breach could escalate to host compromise. Establishing the isolation requirement now means it is already in place when the risk increases.
-2. **Consistent, reproducible environment.** The container pins the YARA version. Results on macOS, Linux, and Windows CI are identical.
+2. **Consistent, reproducible environment.** The container pins the YARA and sigma-cli versions. Results on macOS, Linux, and Windows CI are identical.
 3. **Stand-up and tear-down are the control.** The container is created from a known-good image and destroyed after use. No test artefacts remain on the host.
+
+**No bind mounts.** The container has no access to the host filesystem. All file I/O is explicit: input files are copied in before the run; result files are copied out after. This prevents the container from reading or writing anything beyond the files explicitly provided.
 
 **VM vs Docker:** Docker shares the host kernel — a kernel-level exploit could escape the container. A VM runs its own kernel and provides stronger isolation. For the current campaign (YAML text fixtures), Docker is appropriate. If the repository ever covers binary malware samples, switch to a VM with a pre-scan snapshot, no network adapter, and no shared folders. This document must be updated before that happens.
 
 ---
 
-## Setup — build the test container
+## Architecture — one image, multiple services
 
-Build once per machine. Rebuild only when the YARA or Python version needs updating.
+All tests share a single image (`detection-rules-tests`) built from `tests/Dockerfile`. The image contains:
 
-```bash
-docker build -t detection-rules-yara tests/
-```
+- **YARA** — rule scanner
+- **sigma-cli** — Sigma rule converter
+- **pySigma backends** — Splunk, Elasticsearch, OpenSearch
+- **Test scripts** baked in at `/tests/` — `run-tests.py` (YARA) and `run-sigma-tests.py` (Sigma)
+- **`/input/` and `/output/`** — empty directories for explicit file I/O; no host path is mounted
 
-This produces a minimal Ubuntu 24.04 container with YARA and Python 3. Nothing is installed on the host. The image is local only — it is never pushed to a registry.
+`tests/docker-compose.yml` defines services using this image. The `entrypoint` (the script) is fixed per service; the `command` (args) provides sensible defaults and can be overridden on the command line.
+
+| Service | Script | Default input path | Default output |
+|---|---|---|---|
+| `yara-tests` | `/tests/run-tests.py` | `/input/tests/megalodon/test-manifest.json` | `/output/yara-results.txt` |
+| `sigma-tests` | `/tests/run-sigma-tests.py` | `/input/*.yml` (all YAML in `/input/`) | `/output/sigma-results.txt` |
 
 ---
 
-## Run tests
+## Setup — build the image
 
-All commands below mount the repository root into the container as **read-only**. The container cannot write back to the host.
-
-### Compile check
+Build once per machine. Rebuild when the Dockerfile or pip dependencies change.
 
 ```bash
-docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
-  yara megalodon/yara/megalodon-workflow.yar /dev/null
+cd tests
+docker compose build
 ```
 
-A clean return (exit 0, no output) means the rule compiles. The CI pipeline runs this automatically on every PR.
+This produces a local-only `detection-rules-tests` image. Nothing is installed on the host. The image is never pushed to a registry.
 
-### Positive fixture test — all must match
+---
+
+## Run tests — standard workflow (recommended)
+
+`tests/run.py` is the entry point for all standard test runs. It handles import, run, and export in one command. Run all commands from the **repository root**.
+
+### YARA tests
 
 ```bash
-docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
-  yara megalodon/yara/megalodon-workflow.yar tests/megalodon/fixtures/positive/
+python tests/run.py yara-tests
 ```
 
-Every file in `positive/` must produce at least one rule match. Any file with no output is a false negative — the rule must be revised.
+Copies `megalodon/yara/` and `tests/megalodon/` into the container, runs the scorer, and saves results to `tests/results/`.
 
-### Negative fixture test — zero matches expected
+To save results to a specific directory:
 
 ```bash
-docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
-  yara megalodon/yara/megalodon-workflow.yar tests/megalodon/fixtures/negative/
+python tests/run.py yara-tests --out-dir tests/megalodon/results
 ```
 
-Any output from this command is a false positive — a benign file incorrectly matched. Every false positive must be resolved before merging.
-
-### Full score — precision, recall, F1, and Fβ
+### Sigma conversion tests
 
 ```bash
-docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
-  python3 tests/run-tests.py tests/megalodon/test-manifest.json
+python tests/run.py sigma-tests
 ```
 
-To save a dated report alongside the container output (required before publishing):
+Copies `megalodon/sigma/` into the container, converts each rule to Splunk, Elasticsearch, and OpenSearch, and saves a report to `tests/results/`.
+
+### Adding extra input files
+
+Use `--in src:dest` to copy additional files or directories (relative to repo root) into the container alongside the service defaults:
 
 ```bash
-mkdir -p tests/megalodon/results
-docker run --rm \
-  -v "$(pwd)":/rules:ro \
-  -v "$(pwd)/tests/megalodon/results":/results:rw \
-  detection-rules-yara \
-  python3 tests/run-tests.py tests/megalodon/test-manifest.json \
-    --output /results/$(date +%Y-%m-%d)-score.txt
+python tests/run.py sigma-tests --in megalodon/sigma:/input --out-dir tests/megalodon/results
 ```
 
-The scorer prints TP/FP/FN/TN per rule, precision, recall, F1, and Fβ (default β = 2). It also prints the scoring formulae at the top of every run — the basis is always visible in the saved output. Exits with code 1 if any rule has `FP > 0` or `FN > 0`. See **[Reliability scoring](#reliability-scoring--basis-and-calculation)** below for the mathematical basis and weighting rationale.
+Multiple `--in` pairs are supported and applied in addition to the service defaults.
+
+### Adding a new test service
+
+1. Add a new service entry to `tests/docker-compose.yml`, referencing the same `image: detection-rules-tests`.
+2. Add a `case` block to `tests/run.py` defining `CMD` and `DEFAULT_INPUTS` for the new service.
+3. Update this document with the new service's usage.
+
+---
+
+## Run tests — advanced (manual import/export)
+
+For non-standard runs or custom commands, drive the container directly. `run.py` uses these raw docker commands internally.
+
+### Sigma tests with custom args
+
+```bash
+# Build
+(cd tests && docker compose build)
+
+# Create container (without starting)
+docker create --name sigma-run detection-rules-tests \
+  python3 /tests/run-sigma-tests.py --rules-dir /input --output /output/sigma.txt
+
+# Import input files
+docker cp megalodon/sigma/. sigma-run:/input/
+
+# Run (blocks until exit)
+docker start --attach sigma-run
+
+# Export results
+docker cp sigma-run:/output/sigma.txt ./tests/results/
+
+# Clean up
+docker rm sigma-run
+```
+
+### YARA tests with custom args
+
+```bash
+docker create --name yara-run detection-rules-tests \
+  python3 /tests/run-tests.py \
+    /input/tests/megalodon/test-manifest.json \
+    --root /input --beta 1 --output /output/yara.txt
+
+docker cp megalodon/yara/. yara-run:/input/megalodon/yara/
+docker cp tests/megalodon/. yara-run:/input/tests/megalodon/
+docker start --attach yara-run
+docker cp yara-run:/output/yara.txt ./tests/results/
+docker rm yara-run
+```
+
+### Compile check only
+
+```bash
+docker create --name compile-check detection-rules-tests \
+  yara /input/megalodon-workflow.yar /dev/null
+docker cp megalodon/yara/megalodon-workflow.yar compile-check:/input/
+docker start --attach compile-check
+docker rm compile-check
+```
+
+A clean return (exit 0, no output) means the rule compiles.
+
+### Passing custom args via docker compose
+
+The `entrypoint` (script path) is fixed per service. The `command` block can be overridden by passing args after the service name:
+
+```bash
+cd tests
+docker compose run sigma-tests --rules-dir /input --backends splunk --output /output/splunk-only.txt
+docker compose run yara-tests /input/tests/megalodon/test-manifest.json --root /input --beta 1
+```
+
+`docker compose run` does not handle the file import/export step. Use `run.py` for standard runs, or do the `docker cp` steps manually as shown above.
+
+---
+
+## YARA score output
+
+The scorer prints TP/FP/FN/TN per rule, precision, recall, F1, and Fb (default b = 2). It also prints the scoring formulae at the top of every run — the basis is always visible in the saved output. Exits with code 1 if any rule has `FP > 0` or `FN > 0`. See **[Reliability scoring](#reliability-scoring--basis-and-calculation)** below for the mathematical basis and weighting rationale.
 
 | Metric | Definition | Required to publish |
 |---|---|---|
@@ -96,17 +182,17 @@ The scorer prints TP/FP/FN/TN per rule, precision, recall, F1, and Fβ (default 
 | **FP** | Negative fixture incorrectly matched | **0** |
 | **FN** | Positive fixture failed to match | **0** |
 | **TN** | Negative fixture correctly not matched | — |
-| **Precision** | TP ÷ (TP + FP) | **100%** |
-| **Recall** | TP ÷ (TP + FN) | **100%** |
+| **Precision** | TP / (TP + FP) | **100%** |
+| **Recall** | TP / (TP + FN) | **100%** |
 | **F1** | Harmonic mean of P and R | **1.00** |
-| **Fβ (β = 2)** | Recall-weighted harmonic mean | **1.00** |
+| **Fb (b = 2)** | Recall-weighted harmonic mean | **1.00** |
 
 ### Tear down
 
-The `--rm` flag on every `docker run` command destroys the container automatically when it exits. No manual cleanup is needed. To also remove the image:
+`run.py` removes the container automatically after each run. To also remove the image:
 
 ```bash
-docker rmi detection-rules-yara
+docker rmi detection-rules-tests
 ```
 
 ---
@@ -145,45 +231,45 @@ Low recall lets threats pass undetected. A missed threat may allow an attack to 
 **F1** — harmonic mean; treats a missed threat and a false alarm as equally costly:
 
 ```
-F1 = 2 × Precision × Recall / (Precision + Recall)
+F1 = 2 x Precision x Recall / (Precision + Recall)
 ```
 
 **Why F1 alone is not enough:** in security detection, a false negative (missed threat) and a false positive (false alarm) are not equally costly. The relative cost depends on the deployment context. F1 cannot express this asymmetry.
 
-**Fβ** — weighted harmonic mean that adjusts the cost ratio between FP and FN:
+**Fb** — weighted harmonic mean that adjusts the cost ratio between FP and FN:
 
 ```
-Fβ = (1 + β²) × Precision × Recall / (β² × Precision + Recall)
+Fb = (1 + b^2) x Precision x Recall / (b^2 x Precision + Recall)
 ```
 
-| β value | Effect | When to use |
+| b value | Effect | When to use |
 |---|---|---|
-| β > 1 | Recall weighted more heavily — missed threats penalised harder | Default for detection rules: a missed threat is more dangerous than a false alarm |
-| β = 1 | Equal weight — identical to F1 | Symmetric cost environments |
-| β < 1 | Precision weighted more heavily — false alarms penalised harder | Very high-volume noisy environments where alert fatigue is the dominant risk |
+| b > 1 | Recall weighted more heavily — missed threats penalised harder | Default for detection rules: a missed threat is more dangerous than a false alarm |
+| b = 1 | Equal weight — identical to F1 | Symmetric cost environments |
+| b < 1 | Precision weighted more heavily — false alarms penalised harder | Very high-volume noisy environments where alert fatigue is the dominant risk |
 
-**Default: β = 2 (F2 score).** Recall is weighted 4× more than precision (β² = 4). This expresses the judgement that a missed threat is four times more costly than a false alarm — the conventional choice for security detection rules. Override with `--beta <value>` when a campaign warrants a different weighting.
+**Default: b = 2 (F2 score).** Recall is weighted 4x more than precision (b^2 = 4). This expresses the judgement that a missed threat is four times more costly than a false alarm — the conventional choice for security detection rules. Override with `--beta <value>` when a campaign warrants a different weighting.
 
 ### Why all four metrics must reach 1.00 to publish
 
-When both FP = 0 and FN = 0, precision and recall are both 1.00, which forces F1 = 1.00 and Fβ = 1.00 regardless of β. The weighting does not create a softer bar — it is a diagnostic that identifies *which type of error* is present when the rule fails. A rule that passes all four metrics at 1.00 has zero errors of either type in the test set.
+When both FP = 0 and FN = 0, precision and recall are both 1.00, which forces F1 = 1.00 and Fb = 1.00 regardless of b. The weighting does not create a softer bar — it is a diagnostic that identifies *which type of error* is present when the rule fails. A rule that passes all four metrics at 1.00 has zero errors of either type in the test set.
 
 ### Saved output and traceability
 
-Every test run that precedes publishing must produce a saved report file committed alongside the rule. The file includes the formulae, β value, fixture-level PASS/FAIL, and per-rule scores — so anyone reading the commit can reproduce the exact calculation.
+Every test run that precedes publishing must produce a saved report file committed alongside the rule. The file includes the formulae, b value, fixture-level PASS/FAIL, and per-rule scores — so anyone reading the commit can reproduce the exact calculation.
 
 ```
 tests/megalodon/results/YYYY-MM-DD-score.txt
 ```
 
-The `--output /results/YYYY-MM-DD-score.txt` argument (with a writable `/results` volume mount) produces this file from inside the container. See the **Full score** section above for the complete command.
+The `--output /output/YYYY-MM-DD-score.txt` argument to `run-tests.py` produces this file. `run.py` then copies it to the host via `docker cp`.
 
 ---
 
 ## Test manifest
 
 Each campaign has `tests/<campaign>/test-manifest.json` declaring:
-- `rules_file` — YARA file path (relative to repo root)
+- `rules_file` — YARA file path (relative to the root passed via `--root`)
 - `all_rules` — all rule names in the file (required to count TN correctly)
 - `fixtures` — array of specs; `expected_rules` is empty for negative fixtures
 - `false_positive_risk` — optional flag on high-risk negative fixtures
@@ -216,7 +302,7 @@ meta:
     tested          = "2026-05-30"
     positive_fixtures = "N"
     negative_fixtures = "N"
-    false_positives = "0 in test set — see tests/<campaign>/test-manifest.json"
+    false_positives = "0 in test set - see tests/<campaign>/test-manifest.json"
     precision       = "100%"
     recall          = "100%"
     f1              = "1.00"
@@ -232,12 +318,15 @@ All fields above `tested` are required at rule creation. Fields from `tested` on
 
 ```
 tests/
-├── Dockerfile                        # Test container definition (YARA + sigma-cli + Python 3)
-├── run-tests.py                      # Scoring script (campaign-agnostic; Fβ weighted)
+├── Dockerfile                        # Single image definition (YARA + sigma-cli + pySigma backends)
+├── docker-compose.yml                # Service definitions — one image, multiple services
+├── run.py                            # Standard import/run/export entry point
+├── run-tests.py                      # YARA scoring script (campaign-agnostic; Fb weighted)
+├── run-sigma-tests.py                # Sigma conversion test script
 └── <campaign>/
-    ├── test-manifest.json            # Declares expected matches per fixture
+    ├── test-manifest.json            # Declares expected YARA matches per fixture
     ├── results/                      # Dated score reports (committed as evidence)
-    │   └── YYYY-MM-DD-score.txt
+    |   └── YYYY-MM-DD-score.txt
     └── fixtures/
         ├── positive/                 # Files the rules must match
         └── negative/                 # Files the rules must not match
@@ -263,21 +352,7 @@ Do not upload rules containing unpublished IoCs or internal indicators to third-
 
 ## Sigma testing
 
-Sigma linting runs in the test container. `sigma check` validates rule syntax only — it does not scan potentially malicious files, so it poses no isolation risk. The container is the canonical path for consistency; local execution is also acceptable when a quick check is needed without Docker.
-
-### Lint check — via container (canonical)
-
-```bash
-docker run --rm -v "$(pwd)":/rules:ro detection-rules-yara \
-  sigma check megalodon/sigma/megalodon-github-direct-push-workflow.yml
-```
-
-### Lint check — local (quick check only)
-
-```bash
-pip install sigma-cli
-sigma check megalodon/sigma/megalodon-github-direct-push-workflow.yml
-```
+Sigma conversion tests run via `python tests/run.py sigma-tests`. The script converts each Sigma rule to every configured backend and reports the output for manual review. This tests that rules compile to valid query language — it is not FP/FN detection testing against log fixtures.
 
 ### Required fields
 
@@ -296,24 +371,14 @@ Every Sigma rule must include all of these fields before promotion from `status:
 | `logsource` | Product, category, and/or service |
 | `detection` | Selection and filter conditions |
 
-### SIEM backend validation
-
-Convert to at least one SIEM target before publishing:
-
-```bash
-sigma convert -t splunk megalodon/sigma/megalodon-github-direct-push-workflow.yml
-sigma convert -t elasticsearch megalodon/sigma/megalodon-github-direct-push-workflow.yml
-sigma convert -t sentinel megalodon/sigma/megalodon-github-direct-push-workflow.yml
-```
-
 ### Sigma reliability scoring — current gap
 
-**The fixture-based FP/FN scoring in `run-tests.py` covers YARA rules only.** There is no equivalent precision/recall/F1 framework for Sigma rules yet.
+**The fixture-based FP/FN scoring covers YARA rules only.** There is no equivalent precision/recall/F1 framework for Sigma rules yet.
 
 Testing a Sigma rule for false positives and false negatives requires:
 1. **Log data samples** — real or synthetic EVTX / audit log files representing both attack and benign events
 2. **A Sigma evaluation engine** — tools like `sigma-test` (community) or a live SIEM backend to run the converted query against the sample data
-3. **A separate test harness** — the manifest format in `run-tests.py` would need a parallel implementation that invokes the evaluation engine against log fixtures
+3. **A separate test harness** — a parallel implementation of the manifest format that invokes the evaluation engine against log fixtures
 
 Until this is built, Sigma rules carry a lower evidence bar than YARA rules. Validation against live log data (or a representative sample set) must be completed before `status: experimental` is promoted to `status: stable`.
 

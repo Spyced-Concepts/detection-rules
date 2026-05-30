@@ -4,7 +4,13 @@ FROM ubuntu:24.04
 RUN apt-get update \
     && apt-get install -y --no-install-recommends yara python3 python3-pip python3-venv \
     && python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir sigma-cli \
+    && /opt/venv/bin/pip install --no-cache-dir \
+         sigma-cli \
+         pysigma-backend-splunk \
+         pysigma-backend-elasticsearch \
+         pysigma-backend-opensearch \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH="/opt/venv/bin:$PATH"
-WORKDIR /rules
+RUN mkdir -p /input /output
+COPY run-tests.py run-sigma-tests.py /tests/
+WORKDIR /
