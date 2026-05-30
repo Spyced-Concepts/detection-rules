@@ -27,6 +27,8 @@ services:
       - --root
       - /input
       - --output
+      # run.py overrides this with a dated filename (yara-YYYY-MM-DD.txt).
+      # This undated default is only used when invoking docker compose directly.
       - /output/yara-results.txt
 
   sigma-tests:
@@ -42,4 +44,6 @@ services:
       - lucene
       - opensearch_lucene
       - --output
+      # run.py overrides this with a dated filename (sigma-YYYY-MM-DD.txt).
+      # This undated default is only used when invoking docker compose directly.
       - /output/sigma-results.txt
