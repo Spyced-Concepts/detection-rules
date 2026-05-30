@@ -1,6 +1,6 @@
 ---
 title: ATT&CK Technique Index
-author: Spyced Concepts Ltd.
+author: "Spyced Concepts Ltd., AI-assisted by Claude Sonnet 4.6"
 created: 2026-05-30
 updated: 2026-05-30
 license: Apache-2.0

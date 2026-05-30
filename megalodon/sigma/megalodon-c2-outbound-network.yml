@@ -17,7 +17,7 @@ references:
     - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
     - https://github.com/Spyced-Concepts/detection-rules
 
-author: Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+author: "Spyced Concepts Ltd. (https://spycedconcepts.co.uk), AI-assisted by Claude Sonnet 4.6"
 date: 2026-05-30
 license: Apache-2.0
 
@@ -60,3 +60,7 @@ notes: |
 
     C2 IP confirmed as of 2026-05-30. IP may be reassigned or retired by the
     threat actor — verify continued attribution before treating absence as clean.
+
+    Intelligence source: IoC data sourced from original Megalodon threat research by
+    SafeDep.io — see references. Detection rule logic is original work by Spyced
+    Concepts Ltd. SafeDep.io credited and notified on publication.

@@ -22,7 +22,7 @@ references:
     - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
     - https://github.com/Spyced-Concepts/detection-rules
 
-author: Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+author: "Spyced Concepts Ltd. (https://spycedconcepts.co.uk), AI-assisted by Claude Sonnet 4.6"
 date: 2026-05-30
 license: Apache-2.0
 
@@ -68,3 +68,7 @@ notes: |
 
     Reference: GitHub's own guidance on preventing pwn requests is cited above —
     legitimate workflows using pull_request_target should follow the patterns described there.
+
+    Intelligence source: IoC data sourced from original Megalodon threat research by
+    SafeDep.io — see references. Detection rule logic is original work by Spyced
+    Concepts Ltd. SafeDep.io credited and notified on publication.
