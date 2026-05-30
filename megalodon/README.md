@@ -58,7 +58,7 @@ Apply to `.github/workflows/` files across repositories.
 | `Megalodon_Workflow_Dispatch_Backdoor` | MEDIUM | T1195.002 | 100% | 100% | 1.00 | Targeted variant (Optimize-Build) |
 | `Megalodon_High_Confidence` | CRITICAL | T1195.002, T1071.001, T1059.004 | 100% | 100% | 1.00 | Multi-IoC corroboration rule |
 
-Tested 2026-05-30 — 16 fixtures (7 positive, 9 negative). Score report: `../tests/megalodon/results/2026-05-30-score.txt`
+Tested 2026-05-30 — 16 fixtures (7 positive, 9 negative). Score report: `megalodon/test/yara/results/yara-2026-05-30.txt`
 
 ### Sigma (`sigma/`)
 

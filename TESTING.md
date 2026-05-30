@@ -293,6 +293,8 @@ The `--output /output/yara-YYYY-MM-DD.txt` argument to `yara-score.py` produces 
 
 ## Test manifest
 
+> **Schema status:** The test manifest format is not yet formally schematised. The `schemas/` directory contains `detection-index.schema.json`, which validates the campaign/CVE/technique index files only — it does not cover the test manifest. The manifest format is defined by convention in this section. A formal JSON Schema for the test manifest is tracked as a future improvement.
+
 Each campaign has `<campaign>/test/yara/test-manifest.json` declaring:
 - `rules_file` — YARA file path relative to the campaign root (e.g. `yara/megalodon-workflow.yar`)
 - `all_rules` — all rule names in the file (required to count TN correctly)
