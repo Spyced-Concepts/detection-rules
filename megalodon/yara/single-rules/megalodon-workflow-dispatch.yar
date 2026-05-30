@@ -27,13 +27,13 @@ rule Megalodon_Workflow_Dispatch_Backdoor {
         tlp             = "TLP:CLEAR"
         falsepositives  = "workflow_dispatch alone is extremely common; this rule fires only when combined with Optimize-Build name or C2 IP  -  false positives on those combinations are not expected"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $wf_dispatch = "workflow_dispatch:" ascii

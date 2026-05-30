@@ -27,13 +27,13 @@ rule Megalodon_Workflow_Names {
         tlp             = "TLP:CLEAR"
         falsepositives  = "Legitimate in-house workflows named SysDiag or Optimize-Build; correlate with additional IoCs before acting"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $sysdiag = "name: SysDiag" ascii

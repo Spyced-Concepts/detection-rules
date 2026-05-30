@@ -27,13 +27,13 @@ rule Megalodon_Workflow_C2_IP {
         tlp             = "TLP:CLEAR"
         falsepositives  = "None  -  216.126.225.129 has been observed exclusively in malicious Megalodon workflows"
         tested          = "2026-05-30"
-        test_fixtures   = "16 (7 positive, 9 negative)  -  tests/megalodon/test-manifest.json"
+        test_fixtures   = "16 (7 positive, 9 negative)  -  megalodon/test/yara/test-manifest.json"
         fp_confirmed    = "0"
         precision       = "100%"
         recall          = "100%"
         f1              = "1.00"
         f2              = "1.00"
-        score_report    = "tests/megalodon/results/2026-05-30-score.txt"
+        score_report    = "megalodon/test/yara/results/yara-2026-05-30.txt"
 
     strings:
         $c2_ip = "216.126.225.129" ascii wide
