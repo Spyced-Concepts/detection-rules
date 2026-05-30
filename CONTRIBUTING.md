@@ -4,7 +4,7 @@ This repository is maintained by [Spyced Concepts Ltd.](https://spycedconcepts.c
 
 **This is a publication point, not a community hub.** Rules are researched, written, tested, and reviewed internally. Contributions from the general public are not accepted.
 
-If you find an error in a published rule — false positive, incorrect IoC, logic fault — open an issue and we will address it in the next publication cycle.
+If you find an error in a published rule — false positive, incorrect IoC, logic fault — contact us via the [Spyced Concepts contact form](https://spycedconcepts.co.uk/contact) and we will address it in the next publication cycle.
 
 ---
 
@@ -109,6 +109,7 @@ One `.yar` file per campaign is the default — use multiple files only when rul
 - Rules without tested positive and negative fixtures
 - IoCs without a cited source
 - Changes to `schemas/` without a version increment
+- GitHub Issues — issues are not enabled on this repository; use the [contact form](https://spycedconcepts.co.uk/contact) to report errors
 
 ---
 
