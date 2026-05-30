@@ -3,6 +3,11 @@ creation_date = "2026/05/30"
 integration = ["github"]
 maturity = "development"
 updated_date = "2026/05/30"
+# FIELD LIMITATION: github.head_commit.added/modified do not exist in the logs-github.audit-*
+# integration field mapping. Additionally this rule requires file content inspection to detect
+# the dangerous permission combination — not possible from audit log events alone. Retained as
+# a reference. Content-level detection is covered by the companion YARA rule
+# Megalodon_Workflow_Dangerous_Permissions in megalodon/yara/megalodon-workflow.yar.
 
 [rule]
 author = ["Spyced Concepts Ltd."]

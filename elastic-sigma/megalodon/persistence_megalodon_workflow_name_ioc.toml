@@ -3,6 +3,10 @@ creation_date = "2026/05/30"
 integration = ["github"]
 maturity = "development"
 updated_date = "2026/05/30"
+# FIELD LIMITATION: github.head_commit.added and github.head_commit.modified do not exist
+# in the logs-github.audit-* integration field mapping. The query below will not match.
+# This rule is retained here as a reference. Requires an ECS/integration enhancement to add
+# commit-level file path fields to the GitHub audit log integration before it can be submitted.
 
 [rule]
 author = ["Spyced Concepts Ltd."]

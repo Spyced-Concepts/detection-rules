@@ -3,6 +3,10 @@ creation_date = "2026/05/30"
 integration = ["github"]
 maturity = "development"
 updated_date = "2026/05/30"
+# FIELD LIMITATION: github.head_commit.added/modified and github.pull_request.id do not exist
+# in the logs-github.audit-* integration field mapping. The file-path and PR filters in the
+# query below will not match. Retained as a reference. Requires ECS/integration enhancement
+# to add commit-level file path fields to the GitHub audit log integration before submission.
 
 [rule]
 author = ["Spyced Concepts Ltd."]
