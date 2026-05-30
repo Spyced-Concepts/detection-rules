@@ -6,7 +6,21 @@ Published by [Spyced Concepts Ltd.](https://spycedconcepts.co.uk) — a UK secur
 
 ---
 
-## Contents
+## Indexes
+
+The `index/` folder provides human-readable and machine-readable indexes of every rule in this repository. Start here.
+
+| Index | Markdown | JSON | Description |
+|---|---|---|---|
+| Campaign index | [`index/campaign-index.md`](index/campaign-index.md) | [`index/campaign-index.json`](index/campaign-index.json) | Rules organised by threat campaign |
+| CVE index | [`index/cve-index.md`](index/cve-index.md) | [`index/cve-index.json`](index/cve-index.json) | Rules organised by CVE identifier |
+| ATT&CK technique index | [`index/technique-index.md`](index/technique-index.md) | [`index/technique-index.json`](index/technique-index.json) | Rules organised by MITRE ATT&CK technique |
+
+The JSON indexes conform to the schema at [`schemas/detection-index.schema.json`](schemas/detection-index.schema.json). The schema is versioned — breaking changes increment the major version.
+
+---
+
+## Rules
 
 | Path | Format | Coverage |
 |---|---|---|
@@ -62,9 +76,9 @@ yara -r megalodon/yara/megalodon-workflow.yar ~/Projects/
 
 **Convert to your SIEM with [sigma-cli](https://github.com/SigmaHQ/sigma-cli):**
 ```bash
-sigma convert -t splunk sigma/megalodon/
-sigma convert -t elasticsearch sigma/megalodon/
-sigma convert -t sentinel sigma/megalodon/
+sigma convert -t splunk megalodon/sigma/
+sigma convert -t elasticsearch megalodon/sigma/
+sigma convert -t sentinel megalodon/sigma/
 ```
 
 ---

@@ -1,0 +1,92 @@
+{
+  "$schema": "../schemas/detection-index.schema.json",
+  "schema_version": "1.0.0",
+  "index_type": "campaign",
+  "last_updated": "2026-05-30",
+  "publisher": "Spyced Concepts Ltd.",
+  "campaigns": [
+    {
+      "id": "megalodon",
+      "name": "Megalodon",
+      "description": "Mass GitHub CI workflow backdoor campaign — 5,561 repositories compromised using stolen Personal Access Tokens (PATs) to push malicious workflow files directly to default branches, bypassing PR review. Two variants: SysDiag (mass) and Optimize-Build (targeted, with C2 exfiltration to 216.126.225.129:8443).",
+      "date_first_seen": "2026-05-18",
+      "date_added": "2026-05-30",
+      "status": "active",
+      "severity": "critical",
+      "folder": "megalodon/",
+      "threat_actors": [],
+      "cves": [],
+      "techniques": [
+        "T1059.004",
+        "T1071.001",
+        "T1195.002",
+        "T1078.004",
+        "T1552"
+      ],
+      "rules": [
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Workflow_C2_IP"
+        },
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Workflow_Names"
+        },
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Forged_Author_Email"
+        },
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Workflow_Dangerous_Permissions"
+        },
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Base64_Eval_Payload"
+        },
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Workflow_Dispatch_Backdoor"
+        },
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_High_Confidence"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-github-direct-push-workflow.yml",
+          "format": "sigma"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-workflow-name-ioc.yml",
+          "format": "sigma"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-c2-outbound-network.yml",
+          "format": "sigma"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-base64-exec-ci-runner.yml",
+          "format": "sigma"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-dangerous-workflow-permissions.yml",
+          "format": "sigma"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Megalodon — Mass GitHub Repo Backdooring CI Workflows",
+          "url": "https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/"
+        }
+      ],
+      "notes": "No community YARA or Sigma rules existed for this campaign at time of publication (2026-05-30) — confirmed by checking Neo23x0/signature-base, Elastic/detection-rules, SANS ISC, and Malpedia. These rules fill the gap. No CVEs associated with this campaign — the attack vector exploits legitimate PAT access and GitHub platform features, not software vulnerabilities."
+    }
+  ]
+}
