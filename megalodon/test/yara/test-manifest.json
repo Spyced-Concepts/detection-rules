@@ -1,6 +1,6 @@
 {
   "campaign": "megalodon",
-  "rules_file": "megalodon/yara/megalodon-workflow.yar",
+  "rules_file": "yara/megalodon-workflow.yar",
   "all_rules": [
     "Megalodon_Workflow_C2_IP",
     "Megalodon_Workflow_Names",

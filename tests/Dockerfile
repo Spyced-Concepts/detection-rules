@@ -12,5 +12,5 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH="/opt/venv/bin:$PATH"
 RUN mkdir -p /input /output
-COPY run-tests.py run-sigma-tests.py /tests/
+COPY docker-scripts/ /tests/
 WORKDIR /

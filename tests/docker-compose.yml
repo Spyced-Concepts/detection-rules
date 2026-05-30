@@ -3,13 +3,13 @@
 #
 # Single image — two services. Both use the detection-rules-tests image built from
 # the one Dockerfile in this directory. No bind mounts — all file I/O is explicit;
-# use run.sh for the standard import/run/export workflow.
+# use run.py for the standard import/run/export workflow.
 #
 # Entrypoint + command are split so custom args can be passed via:
 #   docker compose run <service> [args]
 # The entrypoint (script path) is fixed; the command (args) can be overridden.
 #
-# Usage: see ../TESTING.md and run.sh
+# Usage: see ../TESTING.md and tests/run.py
 
 x-test-base: &test-base
   build:
@@ -21,9 +21,9 @@ services:
     <<: *test-base
     entrypoint:
       - python3
-      - /tests/run-tests.py
+      - /tests/yara-score.py
     command:
-      - /input/tests/megalodon/test-manifest.json
+      - /input/test/yara/test-manifest.json
       - --root
       - /input
       - --output
@@ -33,10 +33,10 @@ services:
     <<: *test-base
     entrypoint:
       - python3
-      - /tests/run-sigma-tests.py
+      - /tests/sigma-convert.py
     command:
       - --rules-dir
-      - /input
+      - /input/sigma
       - --backends
       - splunk
       - lucene

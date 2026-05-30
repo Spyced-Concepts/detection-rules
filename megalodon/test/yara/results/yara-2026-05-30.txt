@@ -1,0 +1,68 @@
+
+=== YARA Rule Reliability Test — megalodon ===
+
+Rules:    yara/megalodon-workflow.yar
+Fixtures: 16 (7 positive, 9 negative)
+Scoring:  F2 (β=2)
+
+--- Scoring methodology ---
+
+  Precision = TP / (TP + FP)
+    Fraction of rule fires that are genuine matches.
+    Low precision → false alarms erode analyst confidence.
+
+  Recall = TP / (TP + FN)
+    Fraction of genuinely malicious fixtures caught by the rule.
+    Low recall → threats pass through undetected.
+
+  F1 = 2 × Precision × Recall / (Precision + Recall)
+    Harmonic mean. Treats a missed threat (FN) and a false alarm (FP) as equally costly.
+
+  F2 = (1 + β²) × Precision × Recall / (β² × Precision + Recall)   [β = 2]
+    β > 1: recall weighted more heavily. A missed threat is penalised 4× more than a false alarm.
+    Rationale: in detection contexts a missed threat may allow an attack to proceed;
+    a false alarm costs analyst time but does not allow the attack through.
+
+  Publication requirement: Precision = 1.00, Recall = 1.00, F1 = 1.00, Fβ = 1.00
+  Zero FP and zero FN are the only inputs that satisfy all four metrics simultaneously.
+
+--- Fixture Results ---
+
+  [PASS] [positive] fixtures/positive/synthetic-c2-ip.yml
+  [PASS] [positive] fixtures/positive/synthetic-workflow-name-sysdiag.yml
+  [PASS] [positive] fixtures/positive/synthetic-workflow-name-optimize-build.yml
+  [PASS] [positive] fixtures/positive/synthetic-forged-author.yml
+  [PASS] [positive] fixtures/positive/synthetic-dangerous-permissions.yml
+  [PASS] [positive] fixtures/positive/synthetic-base64-payload.yml
+  [PASS] [positive] fixtures/positive/synthetic-high-confidence.yml
+  [PASS] [negative] fixtures/negative/benign-workflow-dispatch.yml
+  [PASS] [negative] fixtures/negative/benign-base64-encode.yml
+  [PASS] [negative] fixtures/negative/benign-id-token-write-oidc.yml
+  [PASS] [negative] fixtures/negative/benign-pull-request-target.yml
+  [PASS] [negative] fixtures/negative/benign-standard-ci.yml
+  [PASS] [negative] fixtures/negative/benign-base64-pipe-to-python.yml
+  [PASS] [negative] fixtures/negative/benign-base64-decode-to-file.yml
+  [FAIL] [negative] fixtures/negative/benign-prt-with-oidc.yml  [FP-RISK:HIGH]
+         FALSE POSITIVE (unexpected match): Megalodon_Workflow_Dangerous_Permissions
+  [PASS] [negative] fixtures/negative/benign-optimize-build-similar-name.yml
+
+  15/16 fixtures passed
+
+--- Per-Rule Scores ---
+
+  Rule                                                   TP   FP   FN   TN  Precision   Recall     F1     F2  Status
+  ------------------------------------------------------------------------------------------------------------------
+  Megalodon_Base64_Eval_Payload                           2    0    0   14     100.0%   100.0%   1.00   1.00  ✓
+  Megalodon_Forged_Author_Email                           1    0    0   15     100.0%   100.0%   1.00   1.00  ✓
+  Megalodon_High_Confidence                               2    0    0   14     100.0%   100.0%   1.00   1.00  ✓
+  Megalodon_Workflow_C2_IP                                2    0    0   14     100.0%   100.0%   1.00   1.00  ✓
+  Megalodon_Workflow_Dangerous_Permissions                2    1    0   13      66.7%   100.0%   0.80   0.91  ⚠ 1 FALSE POSITIVE(S)
+    FP in: fixtures/negative/benign-prt-with-oidc.yml
+  Megalodon_Workflow_Dispatch_Backdoor                    3    0    0   13     100.0%   100.0%   1.00   1.00  ✓
+  Megalodon_Workflow_Names                                5    0    0   11     100.0%   100.0%   1.00   1.00  ✓
+
+  OVERALL                                                17    1    0   94      94.4%   100.0%   0.97   0.99
+
+  Result: TESTS FAILED — review false positives/negatives above
+  Action: 1 false positive(s) — narrow rule conditions or add filters
+

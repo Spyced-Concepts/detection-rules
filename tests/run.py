@@ -25,9 +25,11 @@ To add a new service: add an entry to SERVICES and document it in TESTING.md.
 """
 
 import argparse
+import datetime
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -35,27 +37,27 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 IMAGE = "detection-rules-tests"
 
+def _dated(label):
+    return f"{label}-{datetime.date.today().isoformat()}.txt"
+
+
 SERVICES = {
     "yara-tests": {
         "cmd": [
-            "python3", "/tests/run-tests.py",
-            "/input/tests/megalodon/test-manifest.json",
+            "python3", "/tests/yara-score.py",
+            "/input/test/yara/test-manifest.json",
             "--root", "/input",
-            "--output", "/output/yara-results.txt",
+            "--output", f"/output/{_dated('yara')}",
         ],
-        "hint": (
-            "python tests/run.py yara-tests\n"
-            "    --in megalodon/yara:/input/megalodon/yara\n"
-            "    --in tests/megalodon:/input/tests/megalodon"
-        ),
+        "hint": "python tests/run.py yara-tests --in-dir megalodon --out-dir megalodon/test/yara/results",
     },
     "sigma-tests": {
         "cmd": [
-            "python3", "/tests/run-sigma-tests.py",
-            "--rules-dir", "/input",
-            "--output", "/output/sigma-results.txt",
+            "python3", "/tests/sigma-convert.py",
+            "--rules-dir", "/input/sigma",
+            "--output", f"/output/{_dated('sigma')}",
         ],
-        "hint": "python tests/run.py sigma-tests --in-dir megalodon/sigma",
+        "hint": "python tests/run.py sigma-tests --in-dir megalodon --out-dir megalodon/test/sigma/results",
     },
 }
 

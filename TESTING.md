@@ -35,15 +35,48 @@ All tests share a single image (`detection-rules-tests`) built from `tests/Docke
 - **YARA** — rule scanner
 - **sigma-cli** — Sigma rule converter
 - **pySigma backends** — Splunk, Elasticsearch, OpenSearch
-- **Test scripts** baked in at `/tests/` — `run-tests.py` (YARA) and `run-sigma-tests.py` (Sigma)
+- **Test scripts** baked in at `/tests/` — `yara-score.py` (YARA) and `sigma-convert.py` (Sigma), sourced from `tests/docker-scripts/`
 - **`/input/` and `/output/`** — empty directories for explicit file I/O; no host path is mounted
 
 `tests/docker-compose.yml` defines services using this image. The `entrypoint` (the script) is fixed per service; the `command` (args) provides sensible defaults and can be overridden on the command line.
 
-| Service | Script | Default input path | Default output |
+| Service | Script | Input path (inside container) | Default output |
 |---|---|---|---|
-| `yara-tests` | `/tests/run-tests.py` | `/input/tests/megalodon/test-manifest.json` | `/output/yara-results.txt` |
-| `sigma-tests` | `/tests/run-sigma-tests.py` | `/input/*.yml` (all YAML in `/input/`) | `/output/sigma-results.txt` |
+| `yara-tests` | `/tests/yara-score.py` | `/input/test/yara/test-manifest.json` (manifest); `/input/yara/` (rules) | `/output/yara-YYYY-MM-DD.txt` |
+| `sigma-tests` | `/tests/sigma-convert.py` | `/input/sigma/` (rules) | `/output/sigma-YYYY-MM-DD.txt` |
+
+---
+
+## Repository layout
+
+Rules and test data live under the campaign directory. The `tests/` directory holds only the container tooling.
+
+```
+<campaign>/
+├── sigma/                        # Sigma rules
+│   └── *.yml
+├── yara/                         # YARA rules
+│   ├── <campaign>.yar
+│   └── single-rules/
+│       └── *.yar
+└── test/
+    ├── yara/                     # YARA test data
+    │   ├── test-manifest.json
+    │   ├── results/              # Scored result files (committed as evidence)
+    │   │   └── yara-YYYY-MM-DD.txt
+    │   └── fixtures/
+    │       ├── positive/         # Files the rules must match
+    │       └── negative/         # Files the rules must not match
+    └── sigma/                    # Sigma test data (future)
+
+tests/
+├── Dockerfile                    # Single image definition
+├── docker-compose.yml            # Service definitions
+├── run.py                        # Standard import/run/export entry point
+└── docker-scripts/               # Scripts baked into the container
+    ├── yara-score.py
+    └── sigma-convert.py
+```
 
 ---
 
@@ -62,44 +95,37 @@ This produces a local-only `detection-rules-tests` image. Nothing is installed o
 
 ## Run tests — standard workflow (recommended)
 
-`tests/run.py` is the entry point for all standard test runs. It handles import, run, and export in one command. Run all commands from the **repository root**.
+`tests/run.py` is the entry point for all standard test runs. It handles import, run, and export in one command. Run all commands from the **repository root**. Both services accept the same flags.
+
+```
+python tests/run.py <service> --in-dir <campaign-dir> [--out-dir <dir>]
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--in-dir DIR` | Yes | Copy the campaign directory into `/input/` inside the container |
+| `--out-dir DIR` | No | Where to save results on the host (default: `tests/results/`) |
 
 ### YARA tests
 
 ```bash
-python tests/run.py yara-tests
+python tests/run.py yara-tests --in-dir megalodon --out-dir megalodon/test/yara/results
 ```
 
-Copies `megalodon/yara/` and `tests/megalodon/` into the container, runs the scorer, and saves results to `tests/results/`.
-
-To save results to a specific directory:
-
-```bash
-python tests/run.py yara-tests --out-dir tests/megalodon/results
-```
+Copies `megalodon/` into the container, runs the scorer against `test/yara/test-manifest.json`, and saves a dated report to the specified output directory.
 
 ### Sigma conversion tests
 
 ```bash
-python tests/run.py sigma-tests
+python tests/run.py sigma-tests --in-dir megalodon --out-dir megalodon/test/sigma/results
 ```
 
-Copies `megalodon/sigma/` into the container, converts each rule to Splunk, Elasticsearch, and OpenSearch, and saves a report to `tests/results/`.
-
-### Adding extra input files
-
-Use `--in src:dest` to copy additional files or directories (relative to repo root) into the container alongside the service defaults:
-
-```bash
-python tests/run.py sigma-tests --in megalodon/sigma:/input --out-dir tests/megalodon/results
-```
-
-Multiple `--in` pairs are supported and applied in addition to the service defaults.
+Copies `megalodon/` into the container, converts every rule in `sigma/` to Splunk, Elasticsearch (Lucene), and OpenSearch, and saves a dated report.
 
 ### Adding a new test service
 
 1. Add a new service entry to `tests/docker-compose.yml`, referencing the same `image: detection-rules-tests`.
-2. Add a `case` block to `tests/run.py` defining `CMD` and `DEFAULT_INPUTS` for the new service.
+2. Add an entry to the `SERVICES` dict in `tests/run.py` with `cmd` and `hint`.
 3. Update this document with the new service's usage.
 
 ---
@@ -108,50 +134,49 @@ Multiple `--in` pairs are supported and applied in addition to the service defau
 
 For non-standard runs or custom commands, drive the container directly. `run.py` uses these raw docker commands internally.
 
-### Sigma tests with custom args
+### YARA tests with custom args
 
 ```bash
 # Build
 (cd tests && docker compose build)
 
 # Create container (without starting)
-docker create --name sigma-run detection-rules-tests \
-  python3 /tests/run-sigma-tests.py --rules-dir /input --output /output/sigma.txt
-
-# Import input files
-docker cp megalodon/sigma/. sigma-run:/input/
-
-# Run (blocks until exit)
-docker start --attach sigma-run
-
-# Export results
-docker cp sigma-run:/output/sigma.txt ./tests/results/
-
-# Clean up
-docker rm sigma-run
-```
-
-### YARA tests with custom args
-
-```bash
 docker create --name yara-run detection-rules-tests \
-  python3 /tests/run-tests.py \
-    /input/tests/megalodon/test-manifest.json \
+  python3 /tests/yara-score.py \
+    /input/test/yara/test-manifest.json \
     --root /input --beta 1 --output /output/yara.txt
 
-docker cp megalodon/yara/. yara-run:/input/megalodon/yara/
-docker cp tests/megalodon/. yara-run:/input/tests/megalodon/
+# Import the campaign directory
+docker cp megalodon/. yara-run:/input/
+
+# Run (blocks until exit)
 docker start --attach yara-run
-docker cp yara-run:/output/yara.txt ./tests/results/
+
+# Export results
+docker cp yara-run:/output/yara.txt ./megalodon/test/yara/results/
+
+# Clean up
 docker rm yara-run
+```
+
+### Sigma tests with custom args
+
+```bash
+docker create --name sigma-run detection-rules-tests \
+  python3 /tests/sigma-convert.py --rules-dir /input/sigma --output /output/sigma.txt
+
+docker cp megalodon/. sigma-run:/input/
+docker start --attach sigma-run
+docker cp sigma-run:/output/sigma.txt ./megalodon/test/sigma/results/
+docker rm sigma-run
 ```
 
 ### Compile check only
 
 ```bash
 docker create --name compile-check detection-rules-tests \
-  yara /input/megalodon-workflow.yar /dev/null
-docker cp megalodon/yara/megalodon-workflow.yar compile-check:/input/
+  yara /input/yara/megalodon-workflow.yar /dev/null
+docker cp megalodon/. compile-check:/input/
 docker start --attach compile-check
 docker rm compile-check
 ```
@@ -164,8 +189,8 @@ The `entrypoint` (script path) is fixed per service. The `command` block can be 
 
 ```bash
 cd tests
-docker compose run sigma-tests --rules-dir /input --backends splunk --output /output/splunk-only.txt
-docker compose run yara-tests /input/tests/megalodon/test-manifest.json --root /input --beta 1
+docker compose run sigma-tests --rules-dir /input/sigma --backends splunk --output /output/splunk-only.txt
+docker compose run yara-tests /input/test/yara/test-manifest.json --root /input --beta 1
 ```
 
 `docker compose run` does not handle the file import/export step. Use `run.py` for standard runs, or do the `docker cp` steps manually as shown above.
@@ -259,17 +284,17 @@ When both FP = 0 and FN = 0, precision and recall are both 1.00, which forces F1
 Every test run that precedes publishing must produce a saved report file committed alongside the rule. The file includes the formulae, b value, fixture-level PASS/FAIL, and per-rule scores — so anyone reading the commit can reproduce the exact calculation.
 
 ```
-tests/megalodon/results/YYYY-MM-DD-score.txt
+<campaign>/test/yara/results/yara-YYYY-MM-DD.txt
 ```
 
-The `--output /output/YYYY-MM-DD-score.txt` argument to `run-tests.py` produces this file. `run.py` then copies it to the host via `docker cp`.
+The `--output /output/yara-YYYY-MM-DD.txt` argument to `yara-score.py` produces this file. `run.py` then copies it to the host via `docker cp`.
 
 ---
 
 ## Test manifest
 
-Each campaign has `tests/<campaign>/test-manifest.json` declaring:
-- `rules_file` — YARA file path (relative to the root passed via `--root`)
+Each campaign has `<campaign>/test/yara/test-manifest.json` declaring:
+- `rules_file` — YARA file path relative to the campaign root (e.g. `yara/megalodon-workflow.yar`)
 - `all_rules` — all rule names in the file (required to count TN correctly)
 - `fixtures` — array of specs; `expected_rules` is empty for negative fixtures
 - `false_positive_risk` — optional flag on high-risk negative fixtures
@@ -302,57 +327,23 @@ meta:
     tested          = "2026-05-30"
     positive_fixtures = "N"
     negative_fixtures = "N"
-    false_positives = "0 in test set - see tests/<campaign>/test-manifest.json"
+    false_positives = "0 in test set - see <campaign>/test/yara/test-manifest.json"
     precision       = "100%"
     recall          = "100%"
     f1              = "1.00"
     f2              = "1.00"
-    score_report    = "tests/<campaign>/results/YYYY-MM-DD-score.txt"
+    score_report    = "<campaign>/test/yara/results/yara-YYYY-MM-DD.txt"
 ```
 
 All fields above `tested` are required at rule creation. Fields from `tested` onward are added after the first successful test run.
 
 ---
 
-## Fixture organisation
-
-```
-tests/
-├── Dockerfile                        # Single image definition (YARA + sigma-cli + pySigma backends)
-├── docker-compose.yml                # Service definitions — one image, multiple services
-├── run.py                            # Standard import/run/export entry point
-├── run-tests.py                      # YARA scoring script (campaign-agnostic; Fb weighted)
-├── run-sigma-tests.py                # Sigma conversion test script
-└── <campaign>/
-    ├── test-manifest.json            # Declares expected YARA matches per fixture
-    ├── results/                      # Dated score reports (committed as evidence)
-    |   └── YYYY-MM-DD-score.txt
-    └── fixtures/
-        ├── positive/                 # Files the rules must match
-        └── negative/                 # Files the rules must not match
-```
-
-**Fixture rules:**
-- Synthetic text fixtures only — contain only the specific IoC string, not a working exploit
-- Comment at top of each file explaining what it tests and why it is safe
-- Never commit real malware samples
-
----
-
-## Validating rules against external malware databases
-
-For validation beyond synthetic fixtures, these services scan rules against real samples without local handling:
-
-- **YARA Scan Service (abuse.ch):** Upload the rule; the service scans it against known malware. Your rule is the input — no sample upload required.
-- **Intezer YARA Playground:** Client-side, browser-based. Rule and sample stay local.
-
-Do not upload rules containing unpublished IoCs or internal indicators to third-party services.
-
----
-
 ## Sigma testing
 
-Sigma conversion tests run via `python tests/run.py sigma-tests`. The script converts each Sigma rule to every configured backend and reports the output for manual review. This tests that rules compile to valid query language — it is not FP/FN detection testing against log fixtures.
+Sigma conversion tests run via `python tests/run.py sigma-tests --in-dir megalodon`. The script converts each Sigma rule to every configured backend and reports the output for manual review. This tests that rules compile to valid query language — it is not FP/FN detection testing against log fixtures.
+
+Output is saved to `<campaign>/test/sigma/results/sigma-YYYY-MM-DD.txt`.
 
 ### Required fields
 
