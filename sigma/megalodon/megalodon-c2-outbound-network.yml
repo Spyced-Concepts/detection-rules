@@ -1,0 +1,61 @@
+title: Megalodon - Outbound Connection to Known C2 Server from CI Runner
+id: f9a9d409-49b4-4da3-8b8b-df441ba32664
+status: experimental
+description: |
+    Detects outbound TCP connections to 216.126.225.129 on port 8443 — the confirmed
+    Megalodon C2 server used to receive exfiltrated CI secrets, credentials, and OIDC
+    tokens from compromised GitHub Actions workflow runs.
+
+    Both Megalodon variants (SysDiag mass variant and Optimize-Build targeted variant)
+    exfiltrate data to this endpoint using a base64-encoded bash payload embedded in
+    the malicious workflow file.
+
+    This rule targets network logs from the CI runner host or network egress monitoring.
+    Apply to GitHub-hosted runners and self-hosted runners equally.
+
+references:
+    - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
+    - https://github.com/Spyced-Concepts/detection-rules
+
+author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+date: 2026-05-30
+
+tags:
+    - attack.exfiltration
+    - attack.command_and_control
+    - attack.t1041    # Exfiltration Over C2 Channel
+    - attack.t1071    # Application Layer Protocol
+
+logsource:
+    category: network_connection
+    product: linux
+
+detection:
+    selection:
+        DestinationIp: '216.126.225.129'
+        DestinationPort: 8443
+    condition: selection
+
+fields:
+    - SourceIp
+    - DestinationIp
+    - DestinationPort
+    - Image
+    - CommandLine
+
+falsepositives:
+    - None expected — this IP/port combination has no known legitimate use
+
+level: critical
+
+notes: |
+    This is the most reliable post-exploitation indicator. If this fires, the workflow
+    has already executed and exfiltration has likely completed. Treat as confirmed
+    compromise: rotate all CI secrets immediately, audit the repository's workflow
+    history, and check all recent commits against the Megalodon YARA rules.
+
+    On GitHub-hosted runners, egress monitoring requires GitHub Advanced Security or
+    runner-level network capture. On self-hosted runners, apply at the network boundary.
+
+    C2 IP confirmed as of 2026-05-30. IP may be reassigned or retired by the
+    threat actor — verify continued attribution before treating absence as clean.

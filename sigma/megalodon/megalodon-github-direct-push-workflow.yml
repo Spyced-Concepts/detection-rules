@@ -1,0 +1,61 @@
+title: Megalodon - Direct Push to Workflow Directory Without Pull Request
+id: b9ce42b4-70c1-4c7c-89a6-31565737c7ad
+status: experimental
+description: |
+    Detects a direct git push that modifies the .github/workflows/ directory without a
+    corresponding pull request. This is the primary attack vector for the Megalodon
+    GitHub CI backdoor campaign (2026-05-18), in which stolen Personal Access Tokens
+    (PATs) were used to push malicious workflow files directly to repository default
+    branches, bypassing PR review and branch protection rules.
+
+    The attack injected one of two workflow types:
+      - SysDiag (mass variant): targets all committers via pull_request_target + id-token:write
+      - Optimize-Build (targeted variant): trigger via workflow_dispatch; exfiltrates secrets
+        to 216.126.225.129:8443 using a base64-encoded bash payload
+
+    Both variants exfiltrate CI secrets, credentials, and OIDC tokens to the C2 server.
+
+references:
+    - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
+    - https://github.com/Spyced-Concepts/detection-rules
+
+author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+date: 2026-05-30
+
+tags:
+    - attack.persistence
+    - attack.initial_access
+    - attack.t1195.001   # Supply Chain Compromise: Compromise Software Dependencies and Development Tools
+    - attack.t1059.004   # Command and Scripting Interpreter: Unix Shell
+    - attack.t1552.004   # Unsecured Credentials: Private Keys (OIDC token theft)
+
+logsource:
+    product: github
+    service: audit
+
+detection:
+    selection_push:
+        action: git.push
+    filter_has_pr:
+        pull_request_id|exists: true
+    condition: selection_push and not filter_has_pr
+
+fields:
+    - actor
+    - repo
+    - action
+    - head_branch
+    - head_sha
+
+falsepositives:
+    - Initial repository setup before branch protection is enforced
+    - Authorised repository administrators with bypass permissions making deliberate direct pushes
+    - Automated bots with explicit bypass grants (document these; any undocumented bypass is suspicious)
+
+level: high
+
+notes: |
+    Triage: confirm whether the pushing actor has an active, scoped PAT or is an OAuth app.
+    Any push by a previously-unseen actor or a generic CI identity (build-bot, auto-ci, ci-bot,
+    pipeline-bot) warrants immediate review of the pushed workflow content against the YARA rules
+    in the companion megalodon-workflow.yar file.

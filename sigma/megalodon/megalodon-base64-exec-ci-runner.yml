@@ -1,0 +1,73 @@
+title: Megalodon - Base64-Decoded Shell Execution on CI Runner
+id: cda00768-9e37-4730-bde5-f6c6e041bc45
+status: experimental
+description: |
+    Detects execution of a base64-decoded payload piped directly to bash or sh on a
+    Linux CI runner host. This is the payload delivery pattern used by both Megalodon
+    variants to execute the exfiltration script at runtime, avoiding storing the
+    malicious payload in plaintext in the workflow file.
+
+    The pattern `echo <base64> | base64 -d | bash` (or equivalent with base64 --decode)
+    is the specific execution chain observed in compromised Megalodon workflow files.
+
+    This rule fires on process creation events at the runner OS level. Apply to
+    self-hosted GitHub Actions runners and any CI runner where process telemetry
+    is available. GitHub-hosted runners do not expose process-level telemetry by default.
+
+references:
+    - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
+    - https://github.com/Spyced-Concepts/detection-rules
+
+author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+date: 2026-05-30
+
+tags:
+    - attack.execution
+    - attack.defense_evasion
+    - attack.t1059.004   # Command and Scripting Interpreter: Unix Shell
+    - attack.t1027       # Obfuscated Files or Information (base64 encoding)
+    - attack.t1027.010   # Command Obfuscation
+
+logsource:
+    category: process_creation
+    product: linux
+
+detection:
+    selection_base64_pipe:
+        CommandLine|contains|all:
+            - 'base64'
+            - '-d'
+            - '|'
+    selection_shell_target:
+        CommandLine|endswith:
+            - '| bash'
+            - '| sh'
+            - '|bash'
+            - '|sh'
+    filter_known_legitimate:
+        ParentImage|contains:
+            - 'apt'
+            - 'dpkg'
+            - 'snap'
+    condition: (selection_base64_pipe and selection_shell_target) and not filter_known_legitimate
+
+fields:
+    - Image
+    - CommandLine
+    - ParentImage
+    - ParentCommandLine
+    - User
+
+falsepositives:
+    - Some legitimate CI workflows use base64-decoded execution for configuration injection
+      or secret handling — review the decoded payload before treating as confirmed malicious
+    - Package manager post-install scripts (excluded by filter, but verify)
+    - Docker layer scripts
+
+level: high
+
+notes: |
+    This rule has broader applicability beyond Megalodon — base64-pipe-to-shell is a
+    generic evasion technique. Tune the filter list for your environment's known-good
+    CI tooling. Correlate with megalodon-c2-outbound-network.yml: if both fire in the
+    same runner session, treat as confirmed Megalodon execution.

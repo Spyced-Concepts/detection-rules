@@ -1,0 +1,69 @@
+title: Megalodon - Workflow with pull_request_target Trigger and id-token Write Permission
+id: 575bc730-9a58-4717-a4e1-32f4c934b588
+status: experimental
+description: |
+    Detects GitHub Actions workflow files that combine the pull_request_target trigger
+    with id-token: write permissions — the dangerous combination used by the Megalodon
+    mass variant (SysDiag.yml) to grant fork pull requests access to OIDC tokens and
+    repository secrets.
+
+    pull_request_target runs in the context of the base repository (with write access
+    and secrets) rather than the fork. When combined with id-token: write, any fork PR
+    can trigger a workflow with full OIDC token access — this is the mechanism Megalodon
+    exploited to exfiltrate tokens from organisations whose repos had this combination
+    in a malicious workflow file.
+
+    This rule is best applied to GitHub audit log webhook events or to repository
+    content scanning. It will fire on any new or modified workflow file that introduces
+    this combination, including from legitimate but misconfigured workflows.
+
+references:
+    - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
+    - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+    - https://github.com/Spyced-Concepts/detection-rules
+
+author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+date: 2026-05-30
+
+tags:
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1195.001   # Supply Chain Compromise
+    - attack.t1552.004   # Unsecured Credentials: Private Keys (OIDC token abuse)
+
+logsource:
+    product: github
+    service: audit
+
+detection:
+    selection:
+        action: git.push
+        head_commit.modified|contains: '.github/workflows/'
+    # Content-level matching requires workflow file scanning; this rule flags the push
+    # event for manual review of the file content against the YARA rule
+    # Megalodon_Workflow_Dangerous_Permissions in megalodon-workflow.yar
+    condition: selection
+
+fields:
+    - actor
+    - repo
+    - action
+    - head_branch
+    - head_commit.modified
+
+falsepositives:
+    - Legitimate use of pull_request_target exists for read-only cross-fork label/comment
+      workflows; these should not require id-token:write. Any workflow needing both
+      should be reviewed and explicitly documented.
+
+level: medium
+
+notes: |
+    This audit-log rule flags workflow file changes for content review. To detect the
+    dangerous permission combination in file content, apply the YARA rule
+    Megalodon_Workflow_Dangerous_Permissions from megalodon-workflow.yar directly to
+    .github/workflows/*.yml files. The two rules complement each other:
+    this one fires on push; the YARA rule confirms the dangerous content.
+
+    Reference: GitHub's own guidance on preventing pwn requests is cited above —
+    legitimate workflows using pull_request_target should follow the patterns described there.

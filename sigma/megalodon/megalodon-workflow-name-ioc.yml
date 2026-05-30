@@ -1,0 +1,55 @@
+title: Megalodon - Known Malicious Workflow Filename Created in Repository
+id: d160e1fd-dcf3-4999-85b0-127023c04716
+status: experimental
+description: |
+    Detects creation of GitHub Actions workflow files using the known Megalodon
+    campaign filenames: SysDiag.yml / SysDiag.yaml (mass variant) and
+    Optimize-Build.yml / Optimize-Build.yaml (targeted variant).
+
+    These filenames are documented IoCs from the Megalodon supply chain backdoor
+    campaign (2026-05-18), which compromised 5,561 GitHub repositories by pushing
+    malicious workflow files using stolen Personal Access Tokens.
+
+references:
+    - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
+    - https://github.com/Spyced-Concepts/detection-rules
+
+author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+date: 2026-05-30
+
+tags:
+    - attack.persistence
+    - attack.t1195.001   # Supply Chain Compromise
+    - attack.t1059.004   # Command and Scripting Interpreter: Unix Shell
+
+logsource:
+    product: github
+    service: audit
+
+detection:
+    selection:
+        action:
+            - git.push
+            - workflows.created_workflow_run
+        path|contains:
+            - '.github/workflows/SysDiag'
+            - '.github/workflows/Optimize-Build'
+    condition: selection
+
+fields:
+    - actor
+    - repo
+    - action
+    - path
+
+falsepositives:
+    - Legitimate internal tooling coincidentally named SysDiag or Optimize-Build
+      (review the workflow content against megalodon-workflow.yar to confirm)
+
+level: critical
+
+notes: |
+    These filenames are specific enough to treat any match as high-confidence until
+    proven otherwise. Cross-reference with megalodon-workflow.yar rule
+    Megalodon_Workflow_Names for file content confirmation.
+    Correlate with megalodon-github-direct-push-workflow.yml to confirm lack of PR.
