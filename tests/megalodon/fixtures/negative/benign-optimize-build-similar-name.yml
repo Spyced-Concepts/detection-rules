@@ -1,0 +1,13 @@
+# Negative fixture — workflow name that resembles but does not match Megalodon IoC
+# Tests that Megalodon_Workflow_Names does NOT match on similar-but-different names.
+# Rule matches "name: Optimize-Build" exactly — word order and hyphen matter.
+# Should NOT match any Megalodon rules.
+name: Build Optimizer
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Optimized build step
+        run: make build-optimized

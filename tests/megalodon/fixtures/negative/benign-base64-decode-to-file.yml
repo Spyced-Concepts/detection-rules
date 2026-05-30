@@ -1,0 +1,13 @@
+# Negative fixture — base64 decode redirected to a file (not piped to shell)
+# Should NOT match Megalodon_Base64_Eval_Payload (no pipe to bash/sh).
+name: Deploy
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decode certificate
+        run: echo LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUW8= | base64 --decode > /tmp/cert.pem
+      - name: Use certificate
+        run: curl --cert /tmp/cert.pem https://example.com

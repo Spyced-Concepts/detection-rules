@@ -1,0 +1,28 @@
+# Negative fixture — KNOWN POTENTIAL FALSE POSITIVE for Megalodon_Workflow_Dangerous_Permissions
+# pull_request_target + id-token: write is a HIGH false positive risk combination.
+# Some legitimate workflows genuinely need both: e.g. PR-triggered deployments that
+# use OIDC to authenticate to a cloud provider. This fixture documents that risk.
+#
+# NOTE: If this fixture triggers Megalodon_Workflow_Dangerous_Permissions, that is
+# a confirmed false positive that should be documented in the rule's meta block.
+name: PR Deploy Preview
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+permissions:
+  id-token: write
+  pull-requests: write
+  contents: read
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/preview-deploy
+          aws-region: eu-west-2
+      - name: Deploy preview
+        run: aws s3 sync ./dist s3://preview-bucket/${{ github.event.pull_request.number }}/

