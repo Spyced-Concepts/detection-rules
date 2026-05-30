@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Spyced-Concepts/detection-rules/blob/main/schemas/detection-index.schema.json",
+  "title": "Spyced Concepts Detection Rules Index",
+  "description": "Schema for detection rule indexes published in the Spyced-Concepts/detection-rules repository. Covers campaign indexes, CVE indexes, and ATT&CK technique indexes.",
+  "type": "object",
+  "required": ["schema_version", "index_type", "last_updated", "publisher"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": {
+      "type": "string",
+      "description": "Version of this schema. Semver. Increment minor on backwards-compatible additions, major on breaking changes.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0"]
+    },
+    "index_type": {
+      "type": "string",
+      "description": "Which index this file represents.",
+      "enum": ["campaign", "cve", "technique"]
+    },
+    "last_updated": {
+      "type": "string",
+      "description": "ISO 8601 date the index was last updated.",
+      "format": "date",
+      "examples": ["2026-05-30"]
+    },
+    "publisher": {
+      "type": "string",
+      "description": "Publishing organisation.",
+      "examples": ["Spyced Concepts Ltd."]
+    },
+    "campaigns": {
+      "type": "array",
+      "description": "Threat campaign entries. Present when index_type is 'campaign'.",
+      "items": { "$ref": "#/$defs/campaign_entry" }
+    },
+    "cves": {
+      "type": "array",
+      "description": "CVE entries. Present when index_type is 'cve'.",
+      "items": { "$ref": "#/$defs/cve_entry" }
+    },
+    "techniques": {
+      "type": "array",
+      "description": "ATT&CK technique entries. Present when index_type is 'technique'.",
+      "items": { "$ref": "#/$defs/technique_entry" }
+    }
+  },
+  "$defs": {
+    "rule_ref": {
+      "type": "object",
+      "description": "A reference to a specific rule file in this repository.",
+      "required": ["path", "format"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Repo-relative path to the rule file.",
+          "examples": ["megalodon/yara/megalodon-workflow.yar"]
+        },
+        "format": {
+          "type": "string",
+          "description": "Rule format.",
+          "enum": ["yara", "sigma", "suricata", "stix"]
+        },
+        "rule_name": {
+          "type": "string",
+          "description": "Specific rule name or identifier within the file, if the file contains multiple rules.",
+          "examples": ["Megalodon_Workflow_C2_IP"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_ref": {
+      "type": "object",
+      "description": "An external source or reference.",
+      "required": ["title", "url"],
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+    "campaign_entry": {
+      "type": "object",
+      "description": "A named threat campaign.",
+      "required": ["id", "name", "date_first_seen", "status", "folder", "techniques", "rules"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Internal campaign identifier. Lowercase, hyphen-separated.",
+          "pattern": "^[a-z0-9-]+$",
+          "examples": ["megalodon"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable campaign name.",
+          "examples": ["Megalodon"]
+        },
+        "description": {
+          "type": "string",
+          "description": "One or two sentence summary of the campaign."
+        },
+        "date_first_seen": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the campaign was first observed or reported publicly."
+        },
+        "date_added": {
+          "type": "string",
+          "format": "date",
+          "description": "Date rules for this campaign were added to this repository."
+        },
+        "status": {
+          "type": "string",
+          "description": "Whether the campaign is still active or considered historical.",
+          "enum": ["active", "archived"]
+        },
+        "severity": {
+          "type": "string",
+          "description": "Highest severity of any rule in this campaign.",
+          "enum": ["critical", "high", "medium", "low", "informational"]
+        },
+        "folder": {
+          "type": "string",
+          "description": "Repo-relative folder containing this campaign's rules.",
+          "examples": ["megalodon/"]
+        },
+        "threat_actors": {
+          "type": "array",
+          "description": "Known or suspected threat actor names or groups. Empty if unknown.",
+          "items": { "type": "string" }
+        },
+        "cves": {
+          "type": "array",
+          "description": "CVE identifiers directly associated with this campaign.",
+          "items": { "type": "string", "pattern": "^CVE-\\d{4}-\\d{4,}$" }
+        },
+        "techniques": {
+          "type": "array",
+          "description": "ATT&CK technique IDs covered by this campaign's rules.",
+          "items": { "type": "string", "pattern": "^T\\d{4}(\\.\\d{3})?$" }
+        },
+        "rules": {
+          "type": "array",
+          "description": "Rule files associated with this campaign.",
+          "items": { "$ref": "#/$defs/rule_ref" },
+          "minItems": 1
+        },
+        "sources": {
+          "type": "array",
+          "description": "External threat-intelligence sources used to develop these rules.",
+          "items": { "$ref": "#/$defs/source_ref" }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-text notes — detection gaps, known false-positive contexts, or investigation pointers."
+        }
+      },
+      "additionalProperties": false
+    },
+    "cve_entry": {
+      "type": "object",
+      "description": "A CVE-keyed entry linking a vulnerability to its associated detection rules.",
+      "required": ["cve_id", "campaigns", "rules"],
+      "properties": {
+        "cve_id": {
+          "type": "string",
+          "description": "CVE identifier.",
+          "pattern": "^CVE-\\d{4}-\\d{4,}$",
+          "examples": ["CVE-2024-12345"]
+        },
+        "description": { "type": "string" },
+        "cvss_v3_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "CVSS v3.x base score."
+        },
+        "cvss_v3_vector": {
+          "type": "string",
+          "description": "CVSS v3 vector string.",
+          "examples": ["CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"]
+        },
+        "campaigns": {
+          "type": "array",
+          "description": "Campaign IDs that exploit this vulnerability.",
+          "items": { "type": "string" }
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rule_ref" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "technique_entry": {
+      "type": "object",
+      "description": "An ATT&CK technique with associated campaigns and detection rules.",
+      "required": ["technique_id", "technique_name", "tactic", "campaigns", "rules"],
+      "properties": {
+        "technique_id": {
+          "type": "string",
+          "description": "MITRE ATT&CK technique identifier.",
+          "pattern": "^T\\d{4}(\\.\\d{3})?$",
+          "examples": ["T1059.004", "T1195"]
+        },
+        "technique_name": {
+          "type": "string",
+          "description": "ATT&CK technique name.",
+          "examples": ["Command and Scripting Interpreter: Unix Shell"]
+        },
+        "tactic": {
+          "type": "string",
+          "description": "ATT&CK tactic this technique belongs to.",
+          "examples": ["execution", "persistence", "collection"]
+        },
+        "campaigns": {
+          "type": "array",
+          "description": "Campaign IDs where this technique is used.",
+          "items": { "type": "string" }
+        },
+        "rules": {
+          "type": "array",
+          "description": "Rules that detect this technique.",
+          "items": { "$ref": "#/$defs/rule_ref" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

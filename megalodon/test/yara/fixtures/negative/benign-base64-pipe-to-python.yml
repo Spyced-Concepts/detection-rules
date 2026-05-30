@@ -1,0 +1,11 @@
+# Negative fixture — base64 decode piped to python3 (not bash/sh)
+# A legitimate workflow that base64-decodes a value and passes it to python3.
+# Should NOT match Megalodon_Base64_Eval_Payload (rule requires | bash or | sh).
+name: Process Config
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decode and process
+        run: echo c3ludGhldGljIHlhcmEgdGVzdCBmaXh0dXJlIHBsYWNlaG9sZGVyCg== | base64 -d | python3 -c "import sys; data=sys.stdin.read(); print(data)"

@@ -1,0 +1,40 @@
+name: Validate Rules
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate-yara:
+    name: Validate YARA rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install YARA
+        run: sudo apt-get install -y yara
+
+      - name: Compile all YARA rules
+        run: |
+          find . -name '*.yar' -o -name '*.yara' | while read f; do
+            echo "Checking: $f"
+            yara "$f" /dev/null && echo "  ✓ OK" || { echo "  ✗ FAILED: $f"; exit 1; }
+          done
+
+  validate-sigma:
+    name: Validate Sigma rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install sigma-cli
+        run: pip install sigma-cli
+
+      - name: Check all Sigma rules
+        run: |
+          find . -path '*/sigma/*.yml' | while read f; do
+            echo "Checking: $f"
+            sigma check "$f" && echo "  ✓ OK" || { echo "  ✗ FAILED: $f"; exit 1; }
+          done

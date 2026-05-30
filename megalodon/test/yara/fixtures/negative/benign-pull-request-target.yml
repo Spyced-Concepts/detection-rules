@@ -1,0 +1,23 @@
+# Negative fixture — fork-PR trigger without an OIDC token permission grant.
+# Standard PR comment workflow — uses the fork-PR trigger for read access to
+# the PR context but does not request cloud credentials. Should NOT match Megalodon_Workflow_Dangerous_Permissions.
+name: Comment on PR
+on:
+  pull_request_target:
+    types: [opened]
+permissions:
+  pull-requests: write
+  contents: read
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Thanks for your pull request!'
+            })

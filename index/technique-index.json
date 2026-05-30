@@ -1,0 +1,93 @@
+{
+  "$schema": "../schemas/detection-index.schema.json",
+  "schema_version": "1.0.0",
+  "index_type": "technique",
+  "last_updated": "2026-05-30",
+  "publisher": "Spyced Concepts Ltd.",
+  "techniques": [
+    {
+      "technique_id": "T1059.004",
+      "technique_name": "Command and Scripting Interpreter: Unix Shell",
+      "tactic": "execution",
+      "campaigns": ["megalodon"],
+      "rules": [
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Base64_Eval_Payload"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-base64-exec-ci-runner.yml",
+          "format": "sigma"
+        }
+      ]
+    },
+    {
+      "technique_id": "T1071.001",
+      "technique_name": "Application Layer Protocol: Web Protocols",
+      "tactic": "command-and-control",
+      "campaigns": ["megalodon"],
+      "rules": [
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Workflow_C2_IP"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-c2-outbound-network.yml",
+          "format": "sigma"
+        }
+      ]
+    },
+    {
+      "technique_id": "T1195.002",
+      "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+      "tactic": "initial-access",
+      "campaigns": ["megalodon"],
+      "rules": [
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_High_Confidence"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-github-direct-push-workflow.yml",
+          "format": "sigma"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-workflow-name-ioc.yml",
+          "format": "sigma"
+        }
+      ]
+    },
+    {
+      "technique_id": "T1078.004",
+      "technique_name": "Valid Accounts: Cloud Accounts",
+      "tactic": "defence-evasion",
+      "campaigns": ["megalodon"],
+      "rules": [
+        {
+          "path": "megalodon/sigma/megalodon-github-direct-push-workflow.yml",
+          "format": "sigma"
+        }
+      ]
+    },
+    {
+      "technique_id": "T1552",
+      "technique_name": "Unsecured Credentials",
+      "tactic": "credential-access",
+      "campaigns": ["megalodon"],
+      "rules": [
+        {
+          "path": "megalodon/yara/megalodon-workflow.yar",
+          "format": "yara",
+          "rule_name": "Megalodon_Workflow_Dangerous_Permissions"
+        },
+        {
+          "path": "megalodon/sigma/megalodon-dangerous-workflow-permissions.yml",
+          "format": "sigma"
+        }
+      ]
+    }
+  ]
+}

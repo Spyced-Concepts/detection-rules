@@ -1,0 +1,12 @@
+# Synthetic positive fixture — Megalodon_Workflow_Names + Megalodon_Workflow_Dispatch_Backdoor (Optimize-Build variant)
+# Contains the targeted-variant workflow name documented in public threat intelligence.
+# This is a text file only — not a functional workflow; cannot execute anything.
+name: Optimize-Build
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run
+        run: echo "placeholder"

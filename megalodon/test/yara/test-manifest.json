@@ -1,0 +1,121 @@
+{
+  "campaign": "megalodon",
+  "rules_file": "yara/megalodon-workflow.yar",
+  "all_rules": [
+    "Megalodon_Workflow_C2_IP",
+    "Megalodon_Workflow_Names",
+    "Megalodon_Forged_Author_Email",
+    "Megalodon_Workflow_Dangerous_Permissions",
+    "Megalodon_Base64_Eval_Payload",
+    "Megalodon_Workflow_Dispatch_Backdoor",
+    "Megalodon_High_Confidence"
+  ],
+  "fixtures": [
+    {
+      "file": "fixtures/positive/synthetic-c2-ip.yml",
+      "description": "Full C2 IP + Optimize-Build name + workflow_dispatch combination",
+      "expected_rules": [
+        "Megalodon_Workflow_C2_IP",
+        "Megalodon_Workflow_Names",
+        "Megalodon_Workflow_Dispatch_Backdoor",
+        "Megalodon_High_Confidence"
+      ]
+    },
+    {
+      "file": "fixtures/positive/synthetic-workflow-name-sysdiag.yml",
+      "description": "SysDiag workflow name with pull_request_target + id-token: write",
+      "expected_rules": [
+        "Megalodon_Workflow_Names",
+        "Megalodon_Workflow_Dangerous_Permissions"
+      ]
+    },
+    {
+      "file": "fixtures/positive/synthetic-workflow-name-optimize-build.yml",
+      "description": "Optimize-Build workflow name with workflow_dispatch",
+      "expected_rules": [
+        "Megalodon_Workflow_Names",
+        "Megalodon_Workflow_Dispatch_Backdoor"
+      ]
+    },
+    {
+      "file": "fixtures/positive/synthetic-forged-author.yml",
+      "description": "Forged git author email and bot identity strings",
+      "expected_rules": [
+        "Megalodon_Forged_Author_Email"
+      ]
+    },
+    {
+      "file": "fixtures/positive/synthetic-dangerous-permissions.yml",
+      "description": "SysDiag name with pull_request_target + id-token: write permissions",
+      "expected_rules": [
+        "Megalodon_Workflow_Names",
+        "Megalodon_Workflow_Dangerous_Permissions"
+      ]
+    },
+    {
+      "file": "fixtures/positive/synthetic-base64-payload.yml",
+      "description": "Base64-decode piped to bash (payload delivery pattern)",
+      "expected_rules": [
+        "Megalodon_Base64_Eval_Payload"
+      ]
+    },
+    {
+      "file": "fixtures/positive/synthetic-high-confidence.yml",
+      "description": "Multiple corroborating IoCs: C2 IP + Optimize-Build + base64 | bash",
+      "expected_rules": [
+        "Megalodon_Workflow_C2_IP",
+        "Megalodon_Workflow_Names",
+        "Megalodon_Base64_Eval_Payload",
+        "Megalodon_Workflow_Dispatch_Backdoor",
+        "Megalodon_High_Confidence"
+      ]
+    },
+    {
+      "file": "fixtures/negative/benign-workflow-dispatch.yml",
+      "description": "Legitimate workflow_dispatch with user input — no IoCs",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-base64-encode.yml",
+      "description": "Base64 used for encoding (not execution) — should not trigger payload rule",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-id-token-write-oidc.yml",
+      "description": "id-token: write without pull_request_target — legitimate OIDC auth on push",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-pull-request-target.yml",
+      "description": "pull_request_target without id-token: write — PR comment workflow",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-standard-ci.yml",
+      "description": "Standard Node.js CI pipeline — no IoCs of any kind",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-base64-pipe-to-python.yml",
+      "description": "Base64 decode piped to python3 — not bash/sh; should not trigger payload rule",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-base64-decode-to-file.yml",
+      "description": "Base64 decode redirected to file — no shell pipe; should not trigger payload rule",
+      "expected_rules": []
+    },
+    {
+      "file": "fixtures/negative/benign-prt-with-oidc.yml",
+      "description": "KNOWN FP RISK: pull_request_target + id-token: write for legitimate PR deploy preview",
+      "expected_rules": [],
+      "false_positive_risk": "HIGH",
+      "notes": "Megalodon_Workflow_Dangerous_Permissions fires on any pull_request_target + id-token: write combination. This is also a legitimate pattern for PR-triggered OIDC deployments. If this fixture triggers the rule, that is a confirmed false positive — document in rule meta and add context guidance."
+    },
+    {
+      "file": "fixtures/negative/benign-optimize-build-similar-name.yml",
+      "description": "Workflow named 'Build Optimizer' — similar to IoC but word order different; should not match",
+      "expected_rules": []
+    }
+  ]
+}

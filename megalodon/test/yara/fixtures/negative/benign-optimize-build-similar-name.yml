@@ -1,0 +1,13 @@
+# Negative fixture — workflow name that resembles but does not match the Megalodon IoC.
+# The IoC name uses a specific word order and hyphen. This fixture uses reversed word
+# order ("Build Optimizer") to confirm the rule does not match on partial similarity.
+# Should NOT match any Megalodon rules.
+name: Build Optimizer
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Optimized build step
+        run: make build-optimized

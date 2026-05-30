@@ -1,0 +1,84 @@
+========================================================================
+SIGMA RULE CONVERSION TEST
+Spyced Concepts Ltd. | detection-rules | megalodon campaign
+========================================================================
+Rules dir   : /input
+Rules found : 5
+Backends    : splunk, lucene, opensearch_lucene
+
+NOTE: This is conversion testing only. Sigma rules are validated by
+converting them to SIEM query languages and reviewing the output.
+FP/FN fixture-based detection testing for Sigma is not yet implemented.
+See TESTING.md for the documented gap.
+
+────────────────────────────────────────────────────────────────────────
+RULE: megalodon-base64-exec-ci-runner.yml
+
+  [splunk] PASS
+    CommandLine="*base64*" CommandLine="*-d*" CommandLine="*|*" CommandLine IN ("*| bash", "*| sh", "*|bash", "*|sh") NOT (ParentImage IN ("*apt*", "*dpkg*", "*snap*")) | table Image,CommandLine,ParentImage,ParentCommandLine,User
+
+  [lucene] PASS
+    ((CommandLine:*base64* AND CommandLine:*\-d* AND CommandLine:*\|*) AND (CommandLine:(*\|\ bash OR *\|\ sh OR *\|bash OR *\|sh))) AND (NOT (ParentImage:(*apt* OR *dpkg* OR *snap*)))
+
+  [opensearch_lucene] PASS
+    ((CommandLine:*base64* AND CommandLine:*\-d* AND CommandLine:*\|*) AND (CommandLine:(*\|\ bash OR *\|\ sh OR *\|bash OR *\|sh))) AND (NOT (ParentImage:(*apt* OR *dpkg* OR *snap*)))
+
+────────────────────────────────────────────────────────────────────────
+RULE: megalodon-c2-outbound-network.yml
+
+  [splunk] PASS
+    DestinationIp="216.126.225.129" DestinationPort=8443 | table SourceIp,DestinationIp,DestinationPort,Image,CommandLine
+
+  [lucene] PASS
+    DestinationIp:216.126.225.129 AND DestinationPort:8443
+
+  [opensearch_lucene] PASS
+    DestinationIp:216.126.225.129 AND DestinationPort:8443
+
+────────────────────────────────────────────────────────────────────────
+RULE: megalodon-dangerous-workflow-permissions.yml
+
+  [splunk] PASS
+    action="git.push" head_commit.modified="*.github/workflows/*" | table actor,repo,action,head_branch,head_commit.modified
+
+  [lucene] PASS
+    action:git.push AND head_commit.modified:*.github\/workflows\/*
+
+  [opensearch_lucene] PASS
+    action:git.push AND head_commit.modified:*.github\/workflows\/*
+
+────────────────────────────────────────────────────────────────────────
+RULE: megalodon-github-direct-push-workflow.yml
+
+  [splunk] PASS
+    action="git.push" NOT pull_request_id=* | table actor,repo,action,head_branch,head_sha
+
+  [lucene] PASS
+    action:git.push AND (NOT _exists_:pull_request_id)
+
+  [opensearch_lucene] PASS
+    action:git.push AND (NOT _exists_:pull_request_id)
+
+────────────────────────────────────────────────────────────────────────
+RULE: megalodon-workflow-name-ioc.yml
+
+  [splunk] PASS
+    action IN ("git.push", "workflows.created_workflow_run") path IN ("*.github/workflows/SysDiag*", "*.github/workflows/Optimize-Build*") | table actor,repo,action,path
+
+  [lucene] PASS
+    (action:(git.push OR workflows.created_workflow_run)) AND (path:(*.github\/workflows\/SysDiag* OR *.github\/workflows\/Optimize\-Build*))
+
+  [opensearch_lucene] PASS
+    (action:(git.push OR workflows.created_workflow_run)) AND (path:(*.github\/workflows\/SysDiag* OR *.github\/workflows\/Optimize\-Build*))
+
+========================================================================
+SUMMARY
+========================================================================
+Rules tested      : 5
+Backends tested   : 3
+Total conversions : 15
+  Passed          : 15
+  No output       : 0  (logsource not mapped for backend)
+  Failed          : 0
+
+RESULT: ALL CONVERSIONS PASSED

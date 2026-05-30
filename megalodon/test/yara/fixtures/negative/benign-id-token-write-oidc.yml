@@ -1,0 +1,19 @@
+# Negative fixture — legitimate OIDC token request on a push trigger (no fork PR trigger).
+# Standard AWS OIDC authentication. The id-token permission appears without the
+# fork-PR trigger that makes it dangerous. Should NOT match Megalodon_Workflow_Dangerous_Permissions.
+name: Deploy to AWS
+on:
+  push:
+    branches: [main]
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/deploy-role
+          aws-region: eu-west-2

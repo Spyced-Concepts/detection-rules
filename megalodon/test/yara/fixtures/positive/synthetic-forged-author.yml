@@ -1,0 +1,8 @@
+# Synthetic positive fixture — Megalodon_Forged_Author_Email
+# Contains forged author identity strings documented in public threat intelligence.
+# This is a text file only — not a functional workflow; cannot execute anything.
+# These strings appear in git commit metadata, not workflow files — included here for YARA rule validation.
+author: "build-bot"
+email: [email protected]
+committer: "auto-ci"
+alt_email: [email protected]

@@ -14,8 +14,9 @@ references:
     - https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/
     - https://github.com/Spyced-Concepts/detection-rules
 
-author: Stu Last, Spyced Concepts Ltd. (https://spycedconcepts.co.uk)
+author: "Spyced Concepts Ltd. (https://spycedconcepts.co.uk), AI-assisted by Claude Sonnet 4.6"
 date: 2026-05-30
+license: Apache-2.0
 
 tags:
     - attack.persistence
@@ -53,3 +54,7 @@ notes: |
     proven otherwise. Cross-reference with megalodon-workflow.yar rule
     Megalodon_Workflow_Names for file content confirmation.
     Correlate with megalodon-github-direct-push-workflow.yml to confirm lack of PR.
+
+    Intelligence source: IoC data sourced from original Megalodon threat research by
+    SafeDep.io — see references. Detection rule logic is original work by Spyced
+    Concepts Ltd. SafeDep.io credited and notified on publication.

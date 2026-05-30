@@ -1,0 +1,17 @@
+# Negative fixture — benign base64 usage (encoding, not execution)
+# A legitimate workflow that uses base64 for encoding data, not piping to shell.
+# Should NOT match Megalodon_Base64_Eval_Payload.
+name: Encode Artifact
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Encode config
+        run: |
+          CONFIG=$(cat config.json | base64)
+          echo "ENCODED_CONFIG=$CONFIG" >> $GITHUB_OUTPUT
+      - name: Decode and verify
+        run: |
+          echo "${{ steps.build.outputs.ENCODED_CONFIG }}" | base64 --decode > /tmp/config.json
+          cat /tmp/config.json
